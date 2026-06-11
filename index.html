@@ -7,64 +7,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app-shell">
-    <aside class="insights-panel" aria-label="History and algorithm statistics">
-      <section class="history-panel" aria-label="Robot position history">
-        <h2>Position History</h2>
-        <p id="positionHistorySummary" class="history-summary"></p>
-        <div id="positionHistoryWrap" class="history-table-wrap">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th>Action</th>
-                <th>Position</th>
-                <th>Battery</th>
-                <th>Cap.</th>
-              </tr>
-            </thead>
-            <tbody id="positionHistoryBody">
-              <tr>
-                <td colspan="5">No history yet.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="history-panel metrics-panel" aria-label="Algorithm statistics">
-        <h2>Algorithm Statistics</h2>
-        <dl class="stats-list algorithm-metrics">
-          <div>
-            <dt>Runtime</dt>
-            <dd id="runtimeValue">0 ms</dd>
-          </div>
-          <div>
-            <dt>Visited nodes</dt>
-            <dd id="visitedNodesValue">0</dd>
-          </div>
-          <div>
-            <dt>Required memory</dt>
-            <dd id="requiredMemoryValue">0 nodes</dd>
-          </div>
-          <div>
-            <dt>Battery consumed</dt>
-            <dd id="batteryConsumedValue">0</dd>
-          </div>
-        </dl>
-      </section>
-    </aside>
-
+  <main class="app-shell simple-shell">
     <section class="map-section" aria-label="Simulation map">
-      <div class="section-header">
-        <div>
-          <h1>CleanerBot Simulator</h1>
-          <p id="moduleWarning" class="module-warning">
-            JavaScript module chua chay. Hay mo bang Live Server thay vi mo truc tiep file HTML.
-          </p>
-        </div>
-      </div>
-
       <div class="map-layout" aria-label="Grid map with coordinates">
         <div class="map-corner-label" aria-hidden="true"></div>
         <div id="gridColumnLabels" class="map-axis map-axis-columns" aria-hidden="true"></div>
@@ -83,70 +27,19 @@
     </section>
 
     <aside class="control-panel" aria-label="Controls">
-      <section class="panel-block controls-block">
-        <div class="controls-config-region">
-          <h2>Controls</h2>
-          <button
-            id="traceToggleButton"
-            class="secondary-button trace-toggle-button"
-            type="button"
-            aria-expanded="false"
-            aria-controls="tracePopup"
-          >
-            Expand
-          </button>
+      <section class="panel-block">
+        <h2>Controls</h2>
 
-          <label for="algorithmSelect">Algorithm</label>
-          <select id="algorithmSelect"></select>
+        <label for="algorithmSelect">Algorithm</label>
+        <select id="algorithmSelect"></select>
 
-          <div class="settings-grid">
-            <label>
-              Map width
-              <input id="mapWidthInput" type="number" min="4" max="20" value="8">
-            </label>
-            <label>
-              Map height
-              <input id="mapHeightInput" type="number" min="4" max="20" value="8">
-            </label>
-            <label>
-              Trash
-              <input id="trashCountInput" type="number" min="0" max="57" value="4">
-            </label>
-            <label>
-              Obstacles
-              <input id="obstacleCountInput" type="number" min="0" max="62" value="5">
-            </label>
-            <label>
-              Max capacity
-              <input id="maxCapacityInput" type="number" min="1" max="20" value="5">
-            </label>
-            <label>
-              Battery loss
-              <input id="batteryLossInput" type="number" min="0" max="100" step="0.5" value="1">
-            </label>
-          </div>
-
-          <section
-            id="tracePopup"
-            class="history-panel trace-panel trace-popup"
-            aria-label="Algorithm traversal log"
-            hidden
-          >
-            <h2>Algorithm Trace</h2>
-            <p id="heuristicDescription" class="trace-help">Heuristic: not available.</p>
-            <div id="algorithmTrace" class="trace-log">
-              <p class="trace-empty">No trace yet.</p>
-            </div>
-          </section>
-        </div>
-
-        <div class="button-grid">
+        <div class="button-grid compact-button-grid">
           <button id="generateButton" type="button">Generate map</button>
           <button id="resetButton" type="button">Reset map</button>
-          <button id="loadDemoMapButton" class="secondary-button" type="button">Load demo map</button>
-          <button id="previousStepButton" type="button">Previous Step</button>
-          <button id="nextStepButton" type="button">Next Step</button>
-          <button id="runButton" type="button">Run Algorithm</button>
+          <button id="loadDemoMapButton" class="secondary-button" type="button">Load demo</button>
+          <button id="previousStepButton" type="button">Previous</button>
+          <button id="nextStepButton" type="button">Next</button>
+          <button id="runButton" type="button">Run</button>
           <button id="stopButton" type="button">Stop</button>
         </div>
 
@@ -157,23 +50,6 @@
           <button class="speed-button" type="button" data-speed="3">3x</button>
           <button class="speed-button" type="button" data-speed="5">5x</button>
         </div>
-
-        <button id="compareButton" class="secondary-button compare-button" type="button">Compare</button>
-      </section>
-
-      <section class="panel-block">
-        <h2>Map Editor</h2>
-
-        <label for="editToolSelect">Edit tool</label>
-        <select id="editToolSelect">
-          <option value="inspect">Inspect</option>
-          <option value="empty">Empty</option>
-          <option value="trash">Trash</option>
-          <option value="obstacle">Obstacle</option>
-          <option value="charger">Charging station</option>
-          <option value="trash_can">Trash can</option>
-          <option value="robot_start">Robot start</option>
-        </select>
       </section>
 
       <section class="panel-block">
@@ -200,6 +76,48 @@
             <dd id="stepsValue">-</dd>
           </div>
         </dl>
+      </section>
+
+      <section class="panel-block">
+        <h2>Map Editor</h2>
+
+        <label for="editToolSelect">Edit tool</label>
+        <select id="editToolSelect">
+          <option value="inspect">Inspect</option>
+          <option value="empty">Empty</option>
+          <option value="trash">Trash</option>
+          <option value="obstacle">Obstacle</option>
+          <option value="charger">Charging station</option>
+          <option value="trash_can">Trash can</option>
+          <option value="robot_start">Robot start</option>
+        </select>
+
+        <div class="settings-grid simplified-settings-grid">
+          <label>
+            Map width
+            <input id="mapWidthInput" type="number" min="4" max="20" value="8">
+          </label>
+          <label>
+            Map height
+            <input id="mapHeightInput" type="number" min="4" max="20" value="8">
+          </label>
+          <label>
+            Trash
+            <input id="trashCountInput" type="number" min="0" max="57" value="4">
+          </label>
+          <label>
+            Obstacles
+            <input id="obstacleCountInput" type="number" min="0" max="62" value="5">
+          </label>
+          <label>
+            Max capacity
+            <input id="maxCapacityInput" type="number" min="1" max="20" value="5">
+          </label>
+          <label>
+            Battery loss
+            <input id="batteryLossInput" type="number" min="0" max="100" step="0.5" value="1">
+          </label>
+        </div>
       </section>
 
       <section class="panel-block">
