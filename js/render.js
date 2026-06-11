@@ -83,7 +83,7 @@ export class Renderer {
         const position = { x, y };
         const cell = document.createElement("div");
         cell.className = "cell";
-        cell.title = `${formatGridCoordinate(position)} (${x}, ${y})`;
+        cell.title = formatGridCoordinate(position);
         cell.dataset.x = `${x}`;
         cell.dataset.y = `${y}`;
 
@@ -136,7 +136,7 @@ export class Renderer {
     const { robot, map } = state;
     setText(this.batteryElement, `${formatNumber(robot.battery)}%`);
     setText(this.capacityElement, `${robot.capacity} / ${robot.maxCapacity}`);
-    setText(this.positionElement, `${formatGridCoordinate(robot)} (${robot.x}, ${robot.y})`);
+    setText(this.positionElement, formatGridCoordinate(robot));
     setText(this.doneElement, map.done ? "true" : "false");
     setText(this.stepsElement, `${state.steps}`);
     setText(this.latestActionElement, formatAction(state.latestAction));
@@ -155,19 +155,11 @@ export function formatNumber(value) {
 }
 
 export function getColumnLabel(index) {
-  let current = index;
-  let label = "";
-
-  do {
-    label = String.fromCharCode(65 + (current % 26)) + label;
-    current = Math.floor(current / 26) - 1;
-  } while (current >= 0);
-
-  return label;
+  return `${index + 1}`;
 }
 
 export function formatGridCoordinate(position) {
-  return `${getColumnLabel(position.x)}${position.y + 1}`;
+  return `(${position.x + 1}, ${position.y + 1})`;
 }
 
 function getCellIcon({ hasRobot, hasObstacle, hasTrash, hasCharger, hasTrashCan }) {

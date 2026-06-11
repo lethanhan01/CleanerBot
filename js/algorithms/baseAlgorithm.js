@@ -131,19 +131,11 @@ export class BaseAlgorithm {
   }
 
   formatCoordinateLabel(position) {
-    return `${this.getColumnLabel(position.x)}${position.y + 1}`;
+    return `(${position.x + 1}, ${position.y + 1})`;
   }
 
   getColumnLabel(index) {
-    let current = index;
-    let label = "";
-
-    do {
-      label = String.fromCharCode(65 + (current % 26)) + label;
-      current = Math.floor(current / 26) - 1;
-    } while (current >= 0);
-
-    return label;
+    return `${index + 1}`;
   }
 
   getMaxBattery(state) {
