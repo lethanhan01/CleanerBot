@@ -13,17 +13,67 @@ export class DFSAlgorithm extends BFSAlgorithm {
     this.setHeuristicDescription("DFS does not use heuristic.");
   }
 
+  chooseWorkTarget(state) {
+    const committedTarget = this.getCommittedRouteTarget(state);
+
+    if (committedTarget) {
+      return committedTarget;
+    }
+
+    return super.chooseWorkTarget(state);
+  }
+
+  getCommittedRouteTarget(state) {
+    if (!this.cachedRoute || this.cachedRoute.length < 2) {
+      return null;
+    }
+
+    const target = this.cachedRoute[this.cachedRoute.length - 1];
+
+    if (
+      this.cachedTargetKey !== this.positionKey(target) ||
+      this.cachedMapKey !== this.getStaticMapKey(state)
+    ) {
+      this.clearRoute();
+      return null;
+    }
+
+    const route = this.syncCachedRoute(state, target);
+
+    if (!route || route.length < 2) {
+      return null;
+    }
+
+    const { robot, map } = state;
+    const isValidTarget =
+      samePosition(target, map.chargingStation) ||
+      (samePosition(target, map.trashCan) && this.shouldEmptyTrash(state)) ||
+      (this.isTrashPosition(state, target) &&
+        robot.capacity < robot.maxCapacity);
+
+    if (!isValidTarget) {
+      this.clearRoute();
+      return null;
+    }
+
+    return { x: target.x, y: target.y };
+  }
+
   findNearestSafeTrashTarget(state) {
     const { robot } = state;
 
     return this.runDFS(state, robot, (current, path) => {
-      if (
-        this.isTrashPosition(state, current) &&
-        this.hasEnoughBatteryForTarget(state, current)
-      ) {
+      if (this.isTrashPosition(state, current)) {
+        const route = path.map((position) => ({ ...position }));
+        this.cachePath(state, robot, current, route);
+
+        if (!this.hasEnoughBatteryForTarget(state, current)) {
+          return null;
+        }
+
         return {
           target: { x: current.x, y: current.y },
-          route: path.map((position) => ({ ...position })),
+          route,
         };
       }
 
@@ -70,6 +120,15 @@ export class DFSAlgorithm extends BFSAlgorithm {
     }
 
     return resultPath;
+  }
+
+  cachePath(state, start, goal, path) {
+    if (!this.pathCache) {
+      this.pathCache = new Map();
+    }
+
+    const cacheKey = this.getPathCacheKey(state, start, goal);
+    this.pathCache.set(cacheKey, this.clonePath(path));
   }
 
   runDFS(state, start, onFound, avoidFirstStepKey = null) {

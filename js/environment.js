@@ -4,10 +4,10 @@ const MAX_BATTERY = 100;
 const ACTION_COST = 1;
 
 const DEFAULT_CONFIG = Object.freeze({
-  gridSizeX: 12,
-  gridSizeY: 12,
-  trashCount: 10,
-  obstacleCount: 10,
+  gridSizeX: 8,
+  gridSizeY: 8,
+  trashCount: 4,
+  obstacleCount: 5,
   maxCapacity: 5,
   batteryLoss: 1,
 });
