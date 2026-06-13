@@ -1,8 +1,8 @@
 # CleanerBot
 
-Skeleton project cho mon Nhap mon AI: mo phong robot hut bui tren web bang HTML, CSS va JavaScript thuan.
+Project mon Nhap mon AI: mo phong robot hut bui tren web bang HTML, CSS va JavaScript thuan.
 
-Project nay chi tao bo khung de nhom tiep tuc phat trien. Cac thuat toan IDS, A*, IDA* chua duoc cai dat that.
+Project hien da cai dat BFS, DFS, IDS, A*, IDA* va Greedy.
 
 ## Cau truc project
 
@@ -51,6 +51,7 @@ Panel Controls co cac input:
 - `Trash`: so o rac duoc sinh ngau nhien
 - `Obstacles`: so vat can duoc sinh ngau nhien
 - `Max capacity`: so rac toi da robot co the mang
+- `Max battery`: muc pin khoi tao va muc pin sau khi sac day
 - `Battery loss`: so phan tram pin bi tru moi khi robot di chuyen 1 o
 
 Sau khi sua thong so, bam `Generate map` de tao lai map. Charging station mac dinh o `(0, 0)`, trash can mac dinh o goc duoi phai cua map.
@@ -175,21 +176,18 @@ return ACTIONS.SUCK_TRASH;
 return ACTIONS.STAY;
 ```
 
-## Ghi chu ve skeleton thuat toan
+## Ghi chu ve thuat toan
 
-Hien tai cac file:
+Project hien co sau thuat toan:
 
-- `ids.js`
-- `astar.js`
-- `idastar.js`
+- `bfs.js`: Breadth-First Search.
+- `dfs.js`: Depth-First Search.
+- `ids.js`: Iterative Deepening Search.
+- `astar.js`: A*.
+- `idastar.js`: IDA*.
+- `greedy.js`: Greedy search.
 
-moi chi co class skeleton va TODO comment. Chua co logic IDS, A*, IDA* that.
-
-`BaseAlgorithm.nextAction(state)` mac dinh tra ve `stay`. Vi vay cac thuat toan skeleton nhu IDS, A*, IDA* se dung yen cho den khi thanh vien nhom override `nextAction(state)`.
-
-Khi thanh vien nhom bat dau cai dat thuat toan that, hay override `nextAction(state)` trong file thuat toan tuong ung.
-
-`greedy.js` la mot mau thuat toan co ban de tham khao. No doc `robot.maxCapacity` va `state.config.batteryLoss`, chon muc tieu gan nhat theo Manhattan distance, uu tien ve trash can khi day rac, va ve charging station khi pin khong du an toàn cho muc tieu tiep theo. Day chi la greedy don gian, khong dam bao tim duong toi uu va co the bi ket neu map phuc tap.
+BFS chua bo dieu phoi nghiep vu dung chung. DFS, IDS, A* va IDA* tai su dung bo dieu phoi nay va override phan tim duong. Greedy co cach dieu phoi va chon buoc rieng.
 
 ## Cach de dropdown tu nhan thuat toan moi
 

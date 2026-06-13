@@ -1,6 +1,6 @@
 import { ACTIONS, CleanerMap, Robot, SimulationState, simulationStateFromPlain } from "./models.js";
 
-const MAX_BATTERY = 100;
+const DEFAULT_MAX_BATTERY = 100;
 const ACTION_COST = 1;
 
 const DEFAULT_CONFIG = Object.freeze({
@@ -9,6 +9,7 @@ const DEFAULT_CONFIG = Object.freeze({
   trashCount: 4,
   obstacleCount: 5,
   maxCapacity: 5,
+  maxBattery: DEFAULT_MAX_BATTERY,
   batteryLoss: 1,
 });
 
@@ -59,7 +60,7 @@ export class Environment {
     });
 
     const robot = new Robot({
-      battery: MAX_BATTERY,
+      battery: config.maxBattery,
       capacity: 0,
       maxCapacity: config.maxCapacity,
       x: map.start_x,
@@ -92,15 +93,21 @@ export class Environment {
       return this.generate(nextConfig);
     }
 
+    const wasAtFullBattery =
+      this.state.robot.battery >= this.config.maxBattery;
     this.config = nextConfig;
     this.state.config = this.createStateConfig(nextConfig);
     this.state.robot.maxCapacity = nextConfig.maxCapacity;
+    this.state.robot.battery = wasAtFullBattery
+      ? nextConfig.maxBattery
+      : Math.min(this.state.robot.battery, nextConfig.maxBattery);
     this.state.robot.capacity = Math.min(
       this.state.robot.capacity,
       nextConfig.maxCapacity
     );
     this.initialState.config = this.createStateConfig(nextConfig);
     this.initialState.robot.maxCapacity = nextConfig.maxCapacity;
+    this.initialState.robot.battery = nextConfig.maxBattery;
     this.initialState.robot.capacity = Math.min(
       this.initialState.robot.capacity,
       nextConfig.maxCapacity
@@ -122,10 +129,11 @@ export class Environment {
       trashCount: cleanInitialState.map.trashPositions.length,
       obstacleCount: cleanInitialState.map.obstaclePositions.length,
       maxCapacity: this.config.maxCapacity,
+      maxBattery: this.config.maxBattery,
       batteryLoss: this.config.batteryLoss,
     });
     cleanInitialState.config = this.createStateConfig(this.config);
-    cleanInitialState.robot.battery = MAX_BATTERY;
+    cleanInitialState.robot.battery = this.config.maxBattery;
     cleanInitialState.robot.capacity = 0;
     cleanInitialState.robot.maxCapacity = this.config.maxCapacity;
     cleanInitialState.robot.x = cleanInitialState.map.start_x;
@@ -148,6 +156,7 @@ export class Environment {
     const maxTrashCount = Math.max(0, usableCellCount - obstacleCount);
     const trashCount = clampInteger(config.trashCount, 0, maxTrashCount, DEFAULT_CONFIG.trashCount);
     const maxCapacity = clampInteger(config.maxCapacity, 1, 20, DEFAULT_CONFIG.maxCapacity);
+    const maxBattery = clampInteger(config.maxBattery, 1, 100, DEFAULT_CONFIG.maxBattery);
     const batteryLoss = clampNumber(config.batteryLoss, 0, 100, DEFAULT_CONFIG.batteryLoss);
 
     return {
@@ -156,13 +165,14 @@ export class Environment {
       trashCount,
       obstacleCount,
       maxCapacity,
+      maxBattery,
       batteryLoss,
     };
   }
 
   createStateConfig(config = this.config) {
     return {
-      maxBattery: MAX_BATTERY,
+      maxBattery: config.maxBattery,
       batteryLoss: config.batteryLoss,
       actionCost: ACTION_COST,
     };
@@ -305,10 +315,18 @@ export class Environment {
       trashCount: nextState.map.trashPositions.length,
       obstacleCount: nextState.map.obstaclePositions.length,
       maxCapacity: nextState.robot.maxCapacity,
+      maxBattery:
+        nextState.config?.maxBattery ??
+        nextState.robot.battery ??
+        this.config.maxBattery,
       batteryLoss: nextState.config?.batteryLoss ?? this.config.batteryLoss,
     });
 
     nextState.config = this.createStateConfig(this.config);
+    nextState.robot.battery = Math.min(
+      nextState.robot.battery,
+      this.config.maxBattery
+    );
     this.initialState = nextState.clone();
     this.state = nextState.clone();
     this.updateDoneStatus();
@@ -373,7 +391,9 @@ export class Environment {
     const { robot, map } = this.state;
 
     if (samePosition(robot, position)) {
-      labels.push(`robot battery ${formatNumber(robot.battery)}%, capacity ${robot.capacity}/${robot.maxCapacity}`);
+      labels.push(
+        `robot battery ${formatNumber(robot.battery)}/${formatNumber(this.state.config.maxBattery)}, capacity ${robot.capacity}/${robot.maxCapacity}`
+      );
     }
 
     if (this.hasTrash(x, y)) labels.push("trash");
@@ -586,7 +606,7 @@ export class Environment {
       return;
     }
 
-    robot.battery = MAX_BATTERY;
+    robot.battery = this.config.maxBattery;
     this.state.steps += 1;
     this.state.latestLog = "Battery charged.";
   }

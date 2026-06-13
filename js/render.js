@@ -134,7 +134,10 @@ export class Renderer {
 
   renderStats(state, nextAction) {
     const { robot, map } = state;
-    setText(this.batteryElement, `${formatNumber(robot.battery)}%`);
+    setText(
+      this.batteryElement,
+      `${formatNumber(robot.battery)} / ${formatNumber(state.config.maxBattery)}`
+    );
     setText(this.capacityElement, `${robot.capacity} / ${robot.maxCapacity}`);
     setText(this.positionElement, formatGridCoordinate(robot));
     setText(this.doneElement, map.done ? "true" : "false");
