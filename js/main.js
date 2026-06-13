@@ -3,6 +3,7 @@ import { Simulator } from "./simulator.js";
 import { Renderer } from "./render.js";
 import { algorithmRegistry, createAlgorithm } from "./algorithms/registry.js";
 import { createAlgorithmComparisonMap10x10 } from "./sampleMaps.js";
+import { MapStorage } from "./mapStorage.js?v=3";
 
 document.body.classList.add("js-ready");
 
@@ -18,6 +19,11 @@ const elements = {
   obstacleCountInput: document.getElementById("obstacleCountInput"),
   maxCapacityInput: document.getElementById("maxCapacityInput"),
   batteryLossInput: document.getElementById("batteryLossInput"),
+  mapNameInput: document.getElementById("mapNameInput"),
+  savedMapSelect: document.getElementById("savedMapSelect"),
+  saveMapButton: document.getElementById("saveMapButton"),
+  loadSavedMapButton: document.getElementById("loadSavedMapButton"),
+  deleteSavedMapButton: document.getElementById("deleteSavedMapButton"),
   generateButton: document.getElementById("generateButton"),
   loadDemoMapButton: document.getElementById("loadDemoMapButton"),
   resetButton: document.getElementById("resetButton"),
@@ -38,6 +44,7 @@ const elements = {
 };
 
 const environment = new Environment();
+const mapStorage = new MapStorage();
 const renderer = new Renderer({
   gridElement: elements.gridMap,
   columnLabelsElement: elements.gridColumnLabels,
@@ -101,6 +108,11 @@ function updateButtonState() {
   elements.obstacleCountInput.disabled = !isReady || isRunning;
   elements.maxCapacityInput.disabled = !isReady || isRunning;
   elements.batteryLossInput.disabled = !isReady || isRunning;
+  elements.mapNameInput.disabled = !isReady || isRunning;
+  elements.savedMapSelect.disabled = !isReady || isRunning || elements.savedMapSelect.options.length <= 1;
+  elements.saveMapButton.disabled = !isReady || isRunning || !elements.mapNameInput.value.trim();
+  elements.loadSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
+  elements.deleteSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
   elements.stopButton.disabled = !isRunning;
 }
 
@@ -138,6 +150,67 @@ async function bindEvents() {
     updateInputsFromState(environment.getInitialState());
     updateButtonState();
   });
+
+  elements.saveMapButton.addEventListener("click", async () => {
+    try {
+      const result = await mapStorage.save(
+        elements.mapNameInput.value,
+        environment.getInitialState()
+      );
+      await renderSavedMapOptions(result.name);
+      elements.mapNameInput.value = result.name;
+      showStorageMessage(
+        result.overwritten
+          ? `Updated saved map "${result.name}".`
+          : `Saved map "${result.name}".`
+      );
+    } catch (error) {
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.loadSavedMapButton.addEventListener("click", async () => {
+    try {
+      const selectedName = elements.savedMapSelect.value;
+      simulator.loadState(await mapStorage.load(selectedName));
+      updateInputsFromState(environment.getInitialState());
+      elements.mapNameInput.value = selectedName;
+      showStorageMessage(`Loaded saved map "${selectedName}".`);
+    } catch (error) {
+      await renderSavedMapOptions();
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.deleteSavedMapButton.addEventListener("click", async () => {
+    try {
+      const selectedName = elements.savedMapSelect.value;
+
+      if (await mapStorage.remove(selectedName)) {
+        await renderSavedMapOptions();
+        elements.mapNameInput.value = "";
+        showStorageMessage(`Deleted saved map "${selectedName}".`);
+      }
+    } catch (error) {
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.savedMapSelect.addEventListener("change", () => {
+    if (elements.savedMapSelect.value) {
+      elements.mapNameInput.value = elements.savedMapSelect.value;
+    }
+
+    updateButtonState();
+  });
+
+  elements.mapNameInput.addEventListener("input", updateButtonState);
 
   elements.resetButton.addEventListener("click", () => {
     simulator.reset();
@@ -225,6 +298,47 @@ async function bindEvents() {
   });
 }
 
+async function renderSavedMapOptions(selectedName = "") {
+  elements.savedMapSelect.innerHTML = "";
+
+  let savedMaps;
+
+  try {
+    savedMaps = await mapStorage.list();
+  } catch (error) {
+    const unavailableOption = document.createElement("option");
+    unavailableOption.value = "";
+    unavailableOption.textContent = "Storage server unavailable";
+    elements.savedMapSelect.appendChild(unavailableOption);
+    elements.savedMapSelect.title = error.message;
+    return false;
+  }
+
+  elements.savedMapSelect.title = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = savedMaps.length > 0 ? "Select a saved map" : "No saved maps";
+  elements.savedMapSelect.appendChild(placeholder);
+
+  savedMaps.forEach(({ name }) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    elements.savedMapSelect.appendChild(option);
+  });
+
+  if (savedMaps.some(({ name }) => name === selectedName)) {
+    elements.savedMapSelect.value = selectedName;
+  }
+
+  return true;
+}
+
+function showStorageMessage(message) {
+  elements.latestLog.textContent = message;
+}
+
 function renderCellInspection(cell) {
   const x = Number.parseInt(cell.dataset.x, 10);
   const y = Number.parseInt(cell.dataset.y, 10);
@@ -297,6 +411,7 @@ function clampInteger(value, min, max) {
 
 async function init() {
   renderAlgorithmOptions();
+  const storageAvailable = await renderSavedMapOptions();
   updateButtonState();
 
   simulator = new Simulator({
@@ -308,6 +423,9 @@ async function init() {
   bindEvents();
   handleStateChange(environment.getState());
   updateInputsFromState(environment.getInitialState());
+  if (!storageAvailable) {
+    showStorageMessage("Save/Load maps requires the project server. Run npm start and open http://localhost:3000.");
+  }
   updateButtonState();
 }
 

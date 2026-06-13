@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "name": "cc",
+      "savedAt": "2026-06-13T12:21:20.121Z",
+      "state": {
+        "robot": {
+          "battery": 100,
+          "capacity": 0,
+          "maxCapacity": 5,
+          "x": 0,
+          "y": 0
+        },
+        "map": {
+          "grid_size_x": 8,
+          "grid_size_y": 8,
+          "start_x": 0,
+          "start_y": 0,
+          "trashPositions": [
+            {
+              "x": 5,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ],
+          "obstaclePositions": [
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 5
+            }
+          ],
+          "chargingStation": {
+            "x": 0,
+            "y": 0
+          },
+          "trashCan": {
+            "x": 7,
+            "y": 7
+          },
+          "done": false
+        },
+        "config": {
+          "maxBattery": 100,
+          "batteryLoss": 1,
+          "actionCost": 1
+        },
+        "steps": 0,
+        "latestAction": null,
+        "latestLog": "No action yet."
+      }
+    },
+    {
+      "name": "đsdsdsdsdsdsdsd",
+      "savedAt": "2026-06-13T12:21:25.234Z",
+      "state": {
+        "robot": {
+          "battery": 100,
+          "capacity": 0,
+          "maxCapacity": 5,
+          "x": 0,
+          "y": 0
+        },
+        "map": {
+          "grid_size_x": 8,
+          "grid_size_y": 8,
+          "start_x": 0,
+          "start_y": 0,
+          "trashPositions": [
+            {
+              "x": 5,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 6
+            }
+          ],
+          "obstaclePositions": [
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 5
+            }
+          ],
+          "chargingStation": {
+            "x": 0,
+            "y": 0
+          },
+          "trashCan": {
+            "x": 7,
+            "y": 7
+          },
+          "done": false
+        },
+        "config": {
+          "maxBattery": 100,
+          "batteryLoss": 1,
+          "actionCost": 1
+        },
+        "steps": 0,
+        "latestAction": null,
+        "latestLog": "No action yet."
+      }
+    }
+  ]
+}

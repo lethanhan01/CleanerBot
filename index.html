@@ -118,6 +118,24 @@
             <input id="batteryLossInput" type="number" min="0" max="100" step="0.5" value="1">
           </label>
         </div>
+
+        <div class="saved-map-controls">
+          <h3>Saved Maps</h3>
+
+          <label for="mapNameInput">Map name</label>
+          <input id="mapNameInput" type="text" maxlength="60" placeholder="Example: Three-room map">
+
+          <label for="savedMapSelect">Saved map</label>
+          <select id="savedMapSelect">
+            <option value="">No saved maps</option>
+          </select>
+
+          <div class="button-grid saved-map-buttons">
+            <button id="saveMapButton" type="button">Save map</button>
+            <button id="loadSavedMapButton" class="secondary-button" type="button">Load map</button>
+            <button id="deleteSavedMapButton" class="danger-button" type="button">Delete</button>
+          </div>
+        </div>
       </section>
 
       <section class="panel-block">
@@ -137,6 +155,6 @@
     </aside>
   </main>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

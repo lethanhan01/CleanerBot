@@ -31,12 +31,14 @@ CleanerBot/
 
 Cach khuyen nghi:
 
-1. Mo project bang VS Code.
-2. Cai extension Live Server neu chua co.
-3. Right click `index.html`.
-4. Chon `Open with Live Server`.
+1. Cai Node.js neu may chua co.
+2. Mo terminal tai thu muc project.
+3. Chay `npm start`.
+4. Mo `http://localhost:3000`.
 
-Project khong dung backend va khong dung framework ngoai. Do code su dung ES modules (`import/export`), mot so trinh duyet co the chan khi mo truc tiep bang duong dan `file://`. Neu gap loi do, hay chay bang Live Server.
+Project dung mot server Node.js nho, khong can cai framework hay package ngoai. Server phuc vu giao dien va ghi cac map da luu vao file `data/saved-maps.json`.
+
+Neu van mo giao dien bang Live Server, hay chay `npm start` song song. Giao dien se tu ket noi den API tai cong `3000` de Save/Load map.
 
 Neu trang chi hien khung trang, dropdown rong, va stats van la `-`, gan nhu chac chan JavaScript module chua chay. Hay kiem tra Console cua trinh duyet va chay bang Live Server.
 
@@ -64,6 +66,19 @@ Panel Map Editor cho phep chinh tung o tren grid:
 - `Robot start`: chuyen robot den o do va cap nhat start position
 
 Chon tool, sau do click vao o tren map. Khi simulator dang Run, editor tam thoi bi khoa. Map sau khi chinh bang editor se duoc luu lam moc moi cho nut `Reset map`.
+
+### Luu va tai map
+
+Khu vuc `Saved Maps` trong panel Map Editor cho phep luu cau hinh map vao trinh duyet:
+
+1. Tao map hoac chinh map bang Map Editor.
+2. Nhap ten vao `Map name`.
+3. Bam `Save map`.
+4. Chon map trong danh sach `Saved map` va bam `Load map` de tai lai.
+
+Luu lai cung mot ten se cap nhat ban luu cu. Nut `Delete` xoa map dang chon. Du lieu nam trong `data/saved-maps.json`, vi vay co the commit file nay vao Git hoac copy ca project sang may khac.
+
+Ban luu luon dung trang thai khoi dau cua map, khong luu tien do robot dang chay do.
 
 Map hien thi cac doi tuong bang icon SVG trong `assets/icons/`. Neu muon doi sticker, chi can thay file SVG tuong ung:
 
