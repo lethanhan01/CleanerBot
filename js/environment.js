@@ -471,6 +471,41 @@ export class Environment {
     this.state.latestLog = `Moved robot start to (${x}, ${y}).`;
   }
 
+  spawnRandomTrash(count = 1) {
+    const { robot, map } = this.state;
+    const reservedPositions = [
+      { x: robot.x, y: robot.y },
+      map.chargingStation,
+      map.trashCan,
+      ...map.trashPositions,
+      ...map.obstaclePositions,
+    ];
+    const spawnPositions = this.pickRandomPositions(
+      count,
+      reservedPositions,
+      map.grid_size_x,
+      map.grid_size_y
+    );
+
+    if (spawnPositions.length === 0) {
+      this.state.latestAction = "spawn_trash";
+      this.state.latestLog = "No available cell for new trash.";
+      return this.getState();
+    }
+
+    for (const position of spawnPositions) {
+      this.state.map.trashPositions.push({ ...position });
+    }
+
+    this.state.latestAction = "spawn_trash";
+    this.state.latestLog =
+      spawnPositions.length === 1
+        ? `Spawned random trash at (${spawnPositions[0].x}, ${spawnPositions[0].y}).`
+        : `Spawned ${spawnPositions.length} random trash items.`;
+    this.updateDoneStatus();
+    return this.getState();
+  }
+
   applyAction(action) {
     if (this.state.map.done) {
       this.state.latestAction = ACTIONS.STAY;
