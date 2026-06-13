@@ -586,6 +586,13 @@ button:disabled {
   margin-bottom: 12px;
 }
 
+.panel-note {
+  margin: -6px 0 12px;
+  color: var(--muted);
+  line-height: 1.4;
+  font-size: 13px;
+}
+
 .saved-map-controls input {
   margin-bottom: 14px;
 }

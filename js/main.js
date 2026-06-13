@@ -31,6 +31,7 @@ const elements = {
   nextStepButton: document.getElementById("nextStepButton"),
   runButton: document.getElementById("runButton"),
   stopButton: document.getElementById("stopButton"),
+  spawnTrashButton: document.getElementById("spawnTrashButton"),
   speedButtons: document.querySelectorAll(".speed-button"),
   batteryValue: document.getElementById("batteryValue"),
   capacityValue: document.getElementById("capacityValue"),
@@ -113,7 +114,18 @@ function updateButtonState() {
   elements.saveMapButton.disabled = !isReady || isRunning || !elements.mapNameInput.value.trim();
   elements.loadSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
   elements.deleteSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
+  elements.spawnTrashButton.disabled = !isReady || isRunning;
   elements.stopButton.disabled = !isRunning;
+}
+
+function commitPausedMapChange(nextState, positionHistoryAction = nextState.latestAction) {
+  environment.saveCurrentAsInitialState();
+  simulator.algorithm.reset();
+  simulator.clearNextActionCache();
+  simulator.clearHistory();
+  simulator.resetPositionHistory(nextState, positionHistoryAction);
+  updateCountInputs(nextState);
+  handleStateChange(nextState);
 }
 
 function syncConfigFromInputs() {
@@ -258,14 +270,16 @@ async function bindEvents() {
     const x = Number.parseInt(cell.dataset.x, 10);
     const y = Number.parseInt(cell.dataset.y, 10);
     const nextState = environment.applyMapEdit(elements.editToolSelect.value, x, y);
-    environment.saveCurrentAsInitialState();
-    simulator.algorithm.reset();
-    simulator.clearNextActionCache();
-    simulator.clearHistory();
-    simulator.resetPositionHistory(nextState, null);
-    renderer.render(nextState, simulator.peekNextAction(), simulator.getCurrentTarget());
-    updateCountInputs(nextState);
-    updateButtonState();
+    commitPausedMapChange(nextState);
+  });
+
+  elements.spawnTrashButton.addEventListener("click", () => {
+    if (simulator.isRunning()) {
+      return;
+    }
+
+    const nextState = environment.spawnRandomTrash();
+    commitPausedMapChange(nextState, nextState.latestAction);
   });
 
   elements.gridMap.addEventListener("mouseover", (event) => {
