@@ -18,6 +18,7 @@ const elements = {
   trashCountInput: document.getElementById("trashCountInput"),
   obstacleCountInput: document.getElementById("obstacleCountInput"),
   maxCapacityInput: document.getElementById("maxCapacityInput"),
+  maxBatteryInput: document.getElementById("maxBatteryInput"),
   batteryLossInput: document.getElementById("batteryLossInput"),
   mapNameInput: document.getElementById("mapNameInput"),
   savedMapSelect: document.getElementById("savedMapSelect"),
@@ -72,6 +73,7 @@ function getMapConfigFromInputs() {
     trashCount: elements.trashCountInput.value,
     obstacleCount: elements.obstacleCountInput.value,
     maxCapacity: elements.maxCapacityInput.value,
+    maxBattery: elements.maxBatteryInput.value,
     batteryLoss: elements.batteryLossInput.value,
   };
 }
@@ -108,6 +110,7 @@ function updateButtonState() {
   elements.trashCountInput.disabled = !isReady || isRunning;
   elements.obstacleCountInput.disabled = !isReady || isRunning;
   elements.maxCapacityInput.disabled = !isReady || isRunning;
+  elements.maxBatteryInput.disabled = !isReady || isRunning;
   elements.batteryLossInput.disabled = !isReady || isRunning;
   elements.mapNameInput.disabled = !isReady || isRunning;
   elements.savedMapSelect.disabled = !isReady || isRunning || elements.savedMapSelect.options.length <= 1;
@@ -306,6 +309,7 @@ async function bindEvents() {
     elements.trashCountInput,
     elements.obstacleCountInput,
     elements.maxCapacityInput,
+    elements.maxBatteryInput,
     elements.batteryLossInput,
   ].forEach((input) => {
     input.addEventListener("change", syncConfigFromInputs);
@@ -377,6 +381,7 @@ function updateInputsFromState(state) {
   elements.trashCountInput.value = `${state.map.trashPositions.length}`;
   elements.obstacleCountInput.value = `${state.map.obstaclePositions.length}`;
   elements.maxCapacityInput.value = `${state.robot.maxCapacity}`;
+  elements.maxBatteryInput.value = `${state.config.maxBattery}`;
   elements.batteryLossInput.value = `${state.config.batteryLoss}`;
   updateCountLimitsFromInputs();
 }
