@@ -1,10 +1,10 @@
 # CleanerBot
 
-Skeleton project cho mon Nhap mon AI: mo phong robot hut bui tren web bang HTML, CSS va JavaScript thuan.
+Skeleton project cho môn Nhập môn AI: mô phỏng robot hút bụi trên web bằng HTML, CSS và JavaScript thuần.
 
-Project nay chi tao bo khung de nhom tiep tuc phat trien. Cac thuat toan IDS, A*, IDA* chua duoc cai dat that.
+Project này chỉ tạo bộ khung để nhóm tiếp tục phát triển. Các thuật toán IDS, A*, IDA* chưa được cài đặt thật.
 
-## Cau truc project
+## Cấu trúc project
 
 ```text
 CleanerBot/
@@ -27,45 +27,45 @@ CleanerBot/
 └── README.md
 ```
 
-## Cach chay
+## Cách chạy
 
-Cach khuyen nghi:
+Cách khuyến nghị:
 
-1. Mo project bang VS Code.
-2. Cai extension Live Server neu chua co.
+1. Mở project bằng VS Code.
+2. Cài extension Live Server nếu chưa có.
 3. Right click `index.html`.
-4. Chon `Open with Live Server`.
+4. Chọn `Open with Live Server`.
 
-Project khong dung backend va khong dung framework ngoai. Do code su dung ES modules (`import/export`), mot so trinh duyet co the chan khi mo truc tiep bang duong dan `file://`. Neu gap loi do, hay chay bang Live Server.
+Project không dùng backend và không dùng framework ngoài. Do code sử dụng ES modules (`import/export`), một số trình duyệt có thể chặn khi mở trực tiếp bằng đường dẫn `file://`. Nếu gặp lỗi đó, hãy chạy bằng Live Server.
 
-Neu trang chi hien khung trang, dropdown rong, va stats van la `-`, gan nhu chac chan JavaScript module chua chay. Hay kiem tra Console cua trinh duyet va chay bang Live Server.
+Nếu trang chỉ hiện khung trắng, dropdown rỗng, và stats vẫn là `-`, gần như chắc chắn JavaScript module chưa chạy. Hãy kiểm tra Console của trình duyệt và chạy bằng Live Server.
 
-## Tuy chinh map
+## Tùy chỉnh map
 
-Panel Controls co cac input:
+Panel Controls có các input:
 
-- `Map width`: so cot cua map
-- `Map height`: so hang cua map
-- `Trash`: so o rac duoc sinh ngau nhien
-- `Obstacles`: so vat can duoc sinh ngau nhien
-- `Max capacity`: so rac toi da robot co the mang
-- `Battery loss`: so phan tram pin bi tru moi khi robot di chuyen 1 o
+- `Map width`: số cột của map
+- `Map height`: số hàng của map
+- `Trash`: số ô rác được sinh ngẫu nhiên
+- `Obstacles`: số vật cản được sinh ngẫu nhiên
+- `Max capacity`: số rác tối đa robot có thể mang
+- `Battery loss`: số phần trăm pin bị trừ mỗi khi robot di chuyển 1 ô
 
-Sau khi sua thong so, bam `Generate map` de tao lai map. Charging station mac dinh o `(0, 0)`, trash can mac dinh o goc duoi phai cua map.
+Sau khi sửa thông số, bấm `Generate map` để tạo lại map. Charging station mặc định ở `(0, 0)`, trash can mặc định ở góc dưới phải của map.
 
-Panel Map Editor cho phep chinh tung o tren grid:
+Panel Map Editor cho phép chỉnh từng ô trên grid:
 
-- `Inspect`: xem thong tin o
-- `Empty`: xoa trash va obstacle tai o do
-- `Trash`: them rac
-- `Obstacle`: them vat can
-- `Charging station`: chuyen tram sac den o do
-- `Trash can`: chuyen thung rac den o do
-- `Robot start`: chuyen robot den o do va cap nhat start position
+- `Inspect`: xem thông tin ô
+- `Empty`: xóa trash và obstacle tại ô đó
+- `Trash`: thêm rác
+- `Obstacle`: thêm vật cản
+- `Charging station`: chuyển trạm sạc đến ô đó
+- `Trash can`: chuyển thùng rác đến ô đó
+- `Robot start`: chuyển robot đến ô đó và cập nhật start position
 
-Chon tool, sau do click vao o tren map. Khi simulator dang Run, editor tam thoi bi khoa. Map sau khi chinh bang editor se duoc luu lam moc moi cho nut `Reset map`.
+Chọn tool, sau đó click vào ô trên map. Khi simulator đang Run, editor tạm thời bị khóa. Map sau khi chỉnh bằng editor sẽ được lưu làm mốc mới cho nút `Reset map`.
 
-Map hien thi cac doi tuong bang icon SVG trong `assets/icons/`. Neu muon doi sticker, chi can thay file SVG tuong ung:
+Map hiển thị các đối tượng bằng icon SVG trong `assets/icons/`. Nếu muốn đổi sticker, chỉ cần thay file SVG tương ứng:
 
 - `robot.svg`
 - `trash.svg`
@@ -73,24 +73,24 @@ Map hien thi cac doi tuong bang icon SVG trong `assets/icons/`. Neu muon doi sti
 - `charger.svg`
 - `trash-can.svg`
 
-## Dieu khien simulator
+## Điều khiển simulator
 
-- `Generate map`: sinh map ngau nhien moi theo thong so hien tai.
-- `Reset map`: dua robot, trash, obstacle va cac tram ve lai trang thai ban dau cua map hien tai.
-- `Previous Step`: quay lai trang thai truoc action gan nhat.
-- `Next Step`: chay dung mot action tiep theo.
-- `Run`: chay lien tuc.
-- `Stop`: dung chay lien tuc.
-- `Speed 1x/2x/3x/5x`: doi toc do khi chay lien tuc.
+- `Generate map`: sinh map ngẫu nhiên mới theo thông số hiện tại.
+- `Reset map`: đưa robot, trash, obstacle và các trạm về lại trạng thái ban đầu của map hiện tại.
+- `Previous Step`: quay lại trạng thái trước action gần nhất.
+- `Next Step`: chạy đúng một action tiếp theo.
+- `Run`: chạy liên tục.
+- `Stop`: dừng chạy liên tục.
+- `Speed 1x/2x/3x/5x`: đổi tốc độ khi chạy liên tục.
 
-Panel `Action` hien:
+Panel `Action` hiện:
 
-- `Latest action`: action vua duoc gui vao environment.
-- `Next action`: action simulator dang preview va se dung cho lan Next Step tiep theo.
+- `Latest action`: action vừa được gửi vào environment.
+- `Next action`: action simulator đang preview và sẽ dùng cho lần Next Step tiếp theo.
 
-## Mo hinh du lieu
+## Mô hình dữ liệu
 
-Robot co cac thuoc tinh:
+Robot có các thuộc tính:
 
 - `battery`
 - `capacity`
@@ -98,7 +98,7 @@ Robot co cac thuoc tinh:
 - `x`
 - `y`
 
-Map co cac thuoc tinh:
+Map có các thuộc tính:
 
 - `grid_size_x`
 - `grid_size_y`
@@ -110,7 +110,7 @@ Map co cac thuoc tinh:
 - `trashCan`
 - `done`
 
-Action nam trong `ACTIONS` tai `js/models.js`:
+Action nằm trong `ACTIONS` tại `js/models.js`:
 
 - `up`
 - `down`
@@ -121,11 +121,11 @@ Action nam trong `ACTIONS` tai `js/models.js`:
 - `let_trash_out`
 - `stay`
 
-## Cach them hoac sua thuat toan
+## Cách thêm hoặc sửa thuật toán
 
-Moi thuat toan nam trong mot file rieng tai `js/algorithms/` va export mot class rieng. Tat ca class nen ke thua `BaseAlgorithm`.
+Mỗi thuật toán nằm trong một file riêng tại `js/algorithms/` và export một class riêng. Tất cả class nên kế thừa `BaseAlgorithm`.
 
-Interface can tuan thu:
+Interface cần tuân thủ:
 
 ```js
 class YourAlgorithm extends BaseAlgorithm {
@@ -135,16 +135,16 @@ class YourAlgorithm extends BaseAlgorithm {
   }
 
   reset() {
-    // Xoa trang thai noi bo cua thuat toan.
+    // Xóa trạng thái nội bộ của thuật toán.
   }
 
   nextAction(state) {
-    // Nhan state hien tai, tra ve mot ACTIONS.* hoac null.
+    // Nhận state hiện tại, trả về một ACTIONS.* hoặc null.
   }
 }
 ```
 
-`state` gom:
+`state` gồm:
 
 - `state.robot`
 - `state.map`
@@ -152,7 +152,7 @@ class YourAlgorithm extends BaseAlgorithm {
 - `state.steps`
 - `state.latestLog`
 
-Vi du action hop le:
+Ví dụ action hợp lệ:
 
 ```js
 return ACTIONS.UP;
@@ -160,33 +160,33 @@ return ACTIONS.SUCK_TRASH;
 return ACTIONS.STAY;
 ```
 
-## Ghi chu ve skeleton thuat toan
+## Ghi chú về skeleton thuật toán
 
-Hien tai cac file:
+Hiện tại các file:
 
 - `ids.js`
 - `astar.js`
 - `idastar.js`
 
-moi chi co class skeleton va TODO comment. Chua co logic IDS, A*, IDA* that.
+mới chỉ có class skeleton và TODO comment. Chưa có logic IDS, A*, IDA* thật.
 
-`BaseAlgorithm.nextAction(state)` mac dinh tra ve `stay`. Vi vay cac thuat toan skeleton nhu IDS, A*, IDA* se dung yen cho den khi thanh vien nhom override `nextAction(state)`.
+`BaseAlgorithm.nextAction(state)` mặc định trả về `stay`. Vì vậy các thuật toán skeleton như IDS, A*, IDA* sẽ đứng yên cho đến khi thành viên nhóm override `nextAction(state)`.
 
-Khi thanh vien nhom bat dau cai dat thuat toan that, hay override `nextAction(state)` trong file thuat toan tuong ung.
+Khi thành viên nhóm bắt đầu cài đặt thuật toán thật, hãy override `nextAction(state)` trong file thuật toán tương ứng.
 
-`greedy.js` la mot mau thuat toan co ban de tham khao. No doc `robot.maxCapacity` va `state.config.batteryLoss`, chon muc tieu gan nhat theo Manhattan distance, uu tien ve trash can khi day rac, va ve charging station khi pin khong du an toàn cho muc tieu tiep theo. Day chi la greedy don gian, khong dam bao tim duong toi uu va co the bi ket neu map phuc tap.
+`greedy.js` là một mẫu thuật toán cơ bản để tham khảo. Nó đọc `robot.maxCapacity` và `state.config.batteryLoss`, chọn mục tiêu gần nhất theo Manhattan distance, ưu tiên về trash can khi đầy rác, và về charging station khi pin không đủ an toàn cho mục tiêu tiếp theo. Đây chỉ là greedy đơn giản, không đảm bảo tìm đường tối ưu và có thể bị kẹt nếu map phức tạp.
 
-## Cach de dropdown tu nhan thuat toan moi
+## Cách để dropdown tự nhận thuật toán mới
 
-Vi project chay tren frontend tinh, trinh duyet khong the tu doc danh sach file trong thu muc `js/algorithms/`. Thay vao do, project dung `js/algorithms/registry.js` lam danh sach dang ky thuat toan.
+Vì project chạy trên frontend tĩnh, trình duyệt không thể tự đọc danh sách file trong thư mục `js/algorithms/`. Thay vào đó, project dùng `js/algorithms/registry.js` làm danh sách đăng ký thuật toán.
 
-Khi them mot thuat toan moi:
+Khi thêm một thuật toán mới:
 
-1. Tao file moi, vi du `js/algorithms/bfs.js`.
-2. Export class thuat toan trong file do.
-3. Them mot entry vao `algorithmRegistry`.
+1. Tạo file mới, ví dụ `js/algorithms/bfs.js`.
+2. Export class thuật toán trong file đó.
+3. Thêm một entry vào `algorithmRegistry`.
 
-Vi du:
+Ví dụ:
 
 ```js
 {
@@ -196,4 +196,4 @@ Vi du:
 }
 ```
 
-Sau do dropdown se tu hien BFS, khong can sua `index.html` hoac `main.js`.
+Sau đó dropdown sẽ tự hiện BFS, không cần sửa `index.html` hoặc `main.js`.
