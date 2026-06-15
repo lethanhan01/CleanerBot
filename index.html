@@ -40,7 +40,8 @@
           <button id="previousStepButton" type="button">Previous</button>
           <button id="nextStepButton" type="button">Next</button>
           <button id="runButton" type="button">Run</button>
-          <button id="stopButton" type="button">Stop</button>
+          <button id="stopButton" type="button">Pause</button>
+          <button id="spawnTrashButton" class="secondary-button" type="button">Spawn random trash</button>
         </div>
 
         <div class="speed-controls" aria-label="Run speed">
@@ -80,6 +81,7 @@
 
       <section class="panel-block">
         <h2>Map Editor</h2>
+        <p class="panel-note">Pause the simulation to edit trash, obstacles, charging station, or trash can.</p>
 
         <label for="editToolSelect">Edit tool</label>
         <select id="editToolSelect">
@@ -114,9 +116,31 @@
             <input id="maxCapacityInput" type="number" min="1" max="20" value="5">
           </label>
           <label>
+            Max battery
+            <input id="maxBatteryInput" type="number" min="1" max="100" step="1" value="100">
+          </label>
+          <label>
             Battery loss
             <input id="batteryLossInput" type="number" min="0" max="100" step="0.5" value="1">
           </label>
+        </div>
+
+        <div class="saved-map-controls">
+          <h3>Saved Maps</h3>
+
+          <label for="mapNameInput">Map name</label>
+          <input id="mapNameInput" type="text" maxlength="60" placeholder="Example: Three-room map">
+
+          <label for="savedMapSelect">Saved map</label>
+          <select id="savedMapSelect">
+            <option value="">No saved maps</option>
+          </select>
+
+          <div class="button-grid saved-map-buttons">
+            <button id="saveMapButton" type="button">Save map</button>
+            <button id="loadSavedMapButton" class="secondary-button" type="button">Load map</button>
+            <button id="deleteSavedMapButton" class="danger-button" type="button">Delete</button>
+          </div>
         </div>
       </section>
 
@@ -137,6 +161,6 @@
     </aside>
   </main>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

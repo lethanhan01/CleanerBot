@@ -3,6 +3,7 @@ import { Simulator } from "./simulator.js";
 import { Renderer } from "./render.js";
 import { algorithmRegistry, createAlgorithm } from "./algorithms/registry.js";
 import { createAlgorithmComparisonMap10x10 } from "./sampleMaps.js";
+import { MapStorage } from "./mapStorage.js?v=3";
 
 document.body.classList.add("js-ready");
 
@@ -17,7 +18,13 @@ const elements = {
   trashCountInput: document.getElementById("trashCountInput"),
   obstacleCountInput: document.getElementById("obstacleCountInput"),
   maxCapacityInput: document.getElementById("maxCapacityInput"),
+  maxBatteryInput: document.getElementById("maxBatteryInput"),
   batteryLossInput: document.getElementById("batteryLossInput"),
+  mapNameInput: document.getElementById("mapNameInput"),
+  savedMapSelect: document.getElementById("savedMapSelect"),
+  saveMapButton: document.getElementById("saveMapButton"),
+  loadSavedMapButton: document.getElementById("loadSavedMapButton"),
+  deleteSavedMapButton: document.getElementById("deleteSavedMapButton"),
   generateButton: document.getElementById("generateButton"),
   loadDemoMapButton: document.getElementById("loadDemoMapButton"),
   resetButton: document.getElementById("resetButton"),
@@ -25,6 +32,7 @@ const elements = {
   nextStepButton: document.getElementById("nextStepButton"),
   runButton: document.getElementById("runButton"),
   stopButton: document.getElementById("stopButton"),
+  spawnTrashButton: document.getElementById("spawnTrashButton"),
   speedButtons: document.querySelectorAll(".speed-button"),
   batteryValue: document.getElementById("batteryValue"),
   capacityValue: document.getElementById("capacityValue"),
@@ -38,6 +46,7 @@ const elements = {
 };
 
 const environment = new Environment();
+const mapStorage = new MapStorage();
 const renderer = new Renderer({
   gridElement: elements.gridMap,
   columnLabelsElement: elements.gridColumnLabels,
@@ -64,6 +73,7 @@ function getMapConfigFromInputs() {
     trashCount: elements.trashCountInput.value,
     obstacleCount: elements.obstacleCountInput.value,
     maxCapacity: elements.maxCapacityInput.value,
+    maxBattery: elements.maxBatteryInput.value,
     batteryLoss: elements.batteryLossInput.value,
   };
 }
@@ -100,8 +110,25 @@ function updateButtonState() {
   elements.trashCountInput.disabled = !isReady || isRunning;
   elements.obstacleCountInput.disabled = !isReady || isRunning;
   elements.maxCapacityInput.disabled = !isReady || isRunning;
+  elements.maxBatteryInput.disabled = !isReady || isRunning;
   elements.batteryLossInput.disabled = !isReady || isRunning;
+  elements.mapNameInput.disabled = !isReady || isRunning;
+  elements.savedMapSelect.disabled = !isReady || isRunning || elements.savedMapSelect.options.length <= 1;
+  elements.saveMapButton.disabled = !isReady || isRunning || !elements.mapNameInput.value.trim();
+  elements.loadSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
+  elements.deleteSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
+  elements.spawnTrashButton.disabled = !isReady || isRunning;
   elements.stopButton.disabled = !isRunning;
+}
+
+function commitPausedMapChange(nextState, positionHistoryAction = nextState.latestAction) {
+  environment.saveCurrentAsInitialState();
+  simulator.algorithm.reset();
+  simulator.clearNextActionCache();
+  simulator.clearHistory();
+  simulator.resetPositionHistory(nextState, positionHistoryAction);
+  updateCountInputs(nextState);
+  handleStateChange(nextState);
 }
 
 function syncConfigFromInputs() {
@@ -138,6 +165,67 @@ async function bindEvents() {
     updateInputsFromState(environment.getInitialState());
     updateButtonState();
   });
+
+  elements.saveMapButton.addEventListener("click", async () => {
+    try {
+      const result = await mapStorage.save(
+        elements.mapNameInput.value,
+        environment.getInitialState()
+      );
+      await renderSavedMapOptions(result.name);
+      elements.mapNameInput.value = result.name;
+      showStorageMessage(
+        result.overwritten
+          ? `Updated saved map "${result.name}".`
+          : `Saved map "${result.name}".`
+      );
+    } catch (error) {
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.loadSavedMapButton.addEventListener("click", async () => {
+    try {
+      const selectedName = elements.savedMapSelect.value;
+      simulator.loadState(await mapStorage.load(selectedName));
+      updateInputsFromState(environment.getInitialState());
+      elements.mapNameInput.value = selectedName;
+      showStorageMessage(`Loaded saved map "${selectedName}".`);
+    } catch (error) {
+      await renderSavedMapOptions();
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.deleteSavedMapButton.addEventListener("click", async () => {
+    try {
+      const selectedName = elements.savedMapSelect.value;
+
+      if (await mapStorage.remove(selectedName)) {
+        await renderSavedMapOptions();
+        elements.mapNameInput.value = "";
+        showStorageMessage(`Deleted saved map "${selectedName}".`);
+      }
+    } catch (error) {
+      showStorageMessage(error.message);
+    }
+
+    updateButtonState();
+  });
+
+  elements.savedMapSelect.addEventListener("change", () => {
+    if (elements.savedMapSelect.value) {
+      elements.mapNameInput.value = elements.savedMapSelect.value;
+    }
+
+    updateButtonState();
+  });
+
+  elements.mapNameInput.addEventListener("input", updateButtonState);
 
   elements.resetButton.addEventListener("click", () => {
     simulator.reset();
@@ -185,14 +273,16 @@ async function bindEvents() {
     const x = Number.parseInt(cell.dataset.x, 10);
     const y = Number.parseInt(cell.dataset.y, 10);
     const nextState = environment.applyMapEdit(elements.editToolSelect.value, x, y);
-    environment.saveCurrentAsInitialState();
-    simulator.algorithm.reset();
-    simulator.clearNextActionCache();
-    simulator.clearHistory();
-    simulator.resetPositionHistory(nextState, null);
-    renderer.render(nextState, simulator.peekNextAction(), simulator.getCurrentTarget());
-    updateCountInputs(nextState);
-    updateButtonState();
+    commitPausedMapChange(nextState);
+  });
+
+  elements.spawnTrashButton.addEventListener("click", () => {
+    if (simulator.isRunning()) {
+      return;
+    }
+
+    const nextState = environment.spawnRandomTrash();
+    commitPausedMapChange(nextState, nextState.latestAction);
   });
 
   elements.gridMap.addEventListener("mouseover", (event) => {
@@ -219,10 +309,52 @@ async function bindEvents() {
     elements.trashCountInput,
     elements.obstacleCountInput,
     elements.maxCapacityInput,
+    elements.maxBatteryInput,
     elements.batteryLossInput,
   ].forEach((input) => {
     input.addEventListener("change", syncConfigFromInputs);
   });
+}
+
+async function renderSavedMapOptions(selectedName = "") {
+  elements.savedMapSelect.innerHTML = "";
+
+  let savedMaps;
+
+  try {
+    savedMaps = await mapStorage.list();
+  } catch (error) {
+    const unavailableOption = document.createElement("option");
+    unavailableOption.value = "";
+    unavailableOption.textContent = "Storage server unavailable";
+    elements.savedMapSelect.appendChild(unavailableOption);
+    elements.savedMapSelect.title = error.message;
+    return false;
+  }
+
+  elements.savedMapSelect.title = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = savedMaps.length > 0 ? "Select a saved map" : "No saved maps";
+  elements.savedMapSelect.appendChild(placeholder);
+
+  savedMaps.forEach(({ name }) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    elements.savedMapSelect.appendChild(option);
+  });
+
+  if (savedMaps.some(({ name }) => name === selectedName)) {
+    elements.savedMapSelect.value = selectedName;
+  }
+
+  return true;
+}
+
+function showStorageMessage(message) {
+  elements.latestLog.textContent = message;
 }
 
 function renderCellInspection(cell) {
@@ -249,6 +381,7 @@ function updateInputsFromState(state) {
   elements.trashCountInput.value = `${state.map.trashPositions.length}`;
   elements.obstacleCountInput.value = `${state.map.obstaclePositions.length}`;
   elements.maxCapacityInput.value = `${state.robot.maxCapacity}`;
+  elements.maxBatteryInput.value = `${state.config.maxBattery}`;
   elements.batteryLossInput.value = `${state.config.batteryLoss}`;
   updateCountLimitsFromInputs();
 }
@@ -297,6 +430,7 @@ function clampInteger(value, min, max) {
 
 async function init() {
   renderAlgorithmOptions();
+  const storageAvailable = await renderSavedMapOptions();
   updateButtonState();
 
   simulator = new Simulator({
@@ -308,6 +442,9 @@ async function init() {
   bindEvents();
   handleStateChange(environment.getState());
   updateInputsFromState(environment.getInitialState());
+  if (!storageAvailable) {
+    showStorageMessage("Save/Load maps requires the project server. Run npm start and open http://localhost:3000.");
+  }
   updateButtonState();
 }
 

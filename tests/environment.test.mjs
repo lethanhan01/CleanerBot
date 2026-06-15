@@ -13,6 +13,73 @@ test("Environment defaults match the initial UI configuration", () => {
   assert.equal(state.map.obstaclePositions.length, 5);
 });
 
+test("Environment can spawn random trash on an available cell", () => {
+  const environment = new Environment({
+    gridSizeX: 4,
+    gridSizeY: 4,
+    trashCount: 0,
+    obstacleCount: 0,
+  });
+
+  environment.loadState({
+    robot: { x: 0, y: 0, battery: 100, capacity: 0, maxCapacity: 5 },
+    map: {
+      grid_size_x: 4,
+      grid_size_y: 4,
+      start_x: 0,
+      start_y: 0,
+      trashPositions: [],
+      obstaclePositions: [],
+      chargingStation: { x: 1, y: 0 },
+      trashCan: { x: 3, y: 3 },
+      done: false,
+    },
+    config: { maxBattery: 100, batteryLoss: 1, actionCost: 1 },
+  });
+
+  const state = environment.spawnRandomTrash();
+
+  assert.equal(state.map.trashPositions.length, 1);
+  assert.equal(samePosition(state.map.trashPositions[0], state.robot), false);
+  assert.equal(samePosition(state.map.trashPositions[0], state.map.chargingStation), false);
+  assert.equal(samePosition(state.map.trashPositions[0], state.map.trashCan), false);
+  assert.match(state.latestLog, /Spawned random trash/);
+});
+
+test("Environment allows paused map edits for charger, obstacle, and trash can", () => {
+  const environment = new Environment({
+    gridSizeX: 5,
+    gridSizeY: 5,
+    trashCount: 0,
+    obstacleCount: 0,
+  });
+
+  environment.loadState({
+    robot: { x: 0, y: 0, battery: 100, capacity: 0, maxCapacity: 5 },
+    map: {
+      grid_size_x: 5,
+      grid_size_y: 5,
+      start_x: 0,
+      start_y: 0,
+      trashPositions: [],
+      obstaclePositions: [],
+      chargingStation: { x: 0, y: 0 },
+      trashCan: { x: 4, y: 4 },
+      done: false,
+    },
+    config: { maxBattery: 100, batteryLoss: 1, actionCost: 1 },
+  });
+
+  let state = environment.applyMapEdit("charger", 1, 1);
+  assert.deepEqual(state.map.chargingStation, { x: 1, y: 1 });
+
+  state = environment.applyMapEdit("obstacle", 2, 2);
+  assert.equal(state.map.obstaclePositions.some((position) => samePosition(position, { x: 2, y: 2 })), true);
+
+  state = environment.applyMapEdit("trash_can", 3, 3);
+  assert.deepEqual(state.map.trashCan, { x: 3, y: 3 });
+});
+
 test("generated maps keep every walkable cell connected and reserve station cells", () => {
   for (let sample = 0; sample < 25; sample += 1) {
     const environment = new Environment({
