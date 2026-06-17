@@ -42,6 +42,7 @@
           <button id="runButton" type="button">Run</button>
           <button id="stopButton" type="button">Pause</button>
           <button id="spawnTrashButton" class="secondary-button" type="button">Spawn random trash</button>
+          <button id="compareButton" class="secondary-button" type="button">Compare 8 algorithms</button>
         </div>
 
         <div class="speed-controls" aria-label="Run speed">
@@ -160,6 +161,22 @@
       </section>
     </aside>
   </main>
+
+  <div id="comparePanel" class="compare-panel hidden" aria-hidden="true">
+    <div class="compare-panel-inner">
+      <div class="compare-panel-header">
+        <div>
+          <h2>So sánh 8 thuật toán</h2>
+          <p class="compare-card-subtitle">Chạy cùng một map, quan sát từng thuật toán theo thời gian thực.</p>
+        </div>
+        <div class="compare-panel-actions">
+          <button id="finalizeCompareButton" class="secondary-button" type="button">Final</button>
+          <button id="closeCompareButton" type="button">Đóng</button>
+        </div>
+      </div>
+      <div id="compareGrid" class="compare-grid"></div>
+    </div>
+  </div>
 
   <script type="module" src="js/main.js?v=3"></script>
 </body>
