@@ -25,6 +25,11 @@ export const algorithmRegistry = [
     loadClass: () => import("./idastar.js").then((module) => module.IDAStarAlgorithm),
   },
   {
+    id: "dijkstra",
+    label: "Dijkstra",
+    loadClass: () => import("./dijkstra.js").then((module) => module.DijkstraAlgorithm),
+  },
+{
     id: "greedy",
     label: "Greedy",
     loadClass: () => import("./greedy.js").then((module) => module.GreedyAlgorithm),

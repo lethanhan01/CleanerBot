@@ -36,6 +36,211 @@ body.js-ready .module-warning {
   display: none;
 }
 
+.compare-panel {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(16, 24, 40, 0.65);
+  z-index: 50;
+}
+
+.compare-panel.hidden {
+  display: none;
+}
+
+.compare-panel-inner {
+  width: min(1360px, calc(100vw - 32px));
+  height: min(96vh, 100%);
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 20px 60px rgba(15, 77, 125, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+.compare-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.compare-panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.compare-mini-cell {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.compare-mini-cell.trash {
+  background: var(--trash);
+  color: white;
+}
+
+.compare-mini-cell.obstacle {
+  background: var(--obstacle);
+  color: white;
+}
+
+.compare-mini-cell.charger {
+  background: var(--charger);
+  color: white;
+}
+
+.compare-mini-cell.trash-can {
+  background: var(--trash-can);
+  color: white;
+}
+
+.compare-mini-cell.robot {
+  background: var(--robot) !important;
+  color: white !important;
+}
+
+.compare-mini-cell.robot::after,
+.compare-mini-cell.robot.trash::after,
+.compare-mini-cell.robot.charger::after,
+.compare-mini-cell.robot.trash-can::after,
+.compare-mini-cell.robot.obstacle::after {
+  content: "R";
+}
+
+.compare-panel-header button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+#compareGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+#compareGrid .compare-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#compareGrid .compare-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+#compareGrid .compare-card-grid {
+  display: grid;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: unset !important;
+  background: var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+#compareGrid .compare-card-grid .cell {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+#compareGrid .compare-card-grid .cell:hover {
+  outline: none;
+}
+
+#compareGrid .compare-card-body {
+  display: grid;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+#compareGrid .compare-card-body .compare-stat {
+  font-size: 10px;
+}
+
+#compareGrid .compare-card-title {
+  font-size: 12px;
+}
+
+#compareGrid .compare-card-subtitle {
+  font-size: 11px;
+}
+
+#compareGrid .compare-card-grid .cell.robot::after {
+  content: "R";
+}
+
+#compareGrid .compare-card-grid .cell.trash::after {
+  content: "T";
+}
+
+#compareGrid .compare-card-grid .cell.obstacle::after {
+  content: "#";
+}
+
+#compareGrid .compare-card-grid .cell.charger::after {
+  content: "C";
+}
+
+#compareGrid .compare-card-grid .cell.trash-can::after {
+  content: "B";
+}
+
+#compareGrid .compare-card-grid .cell {
+  font-size: 0.72rem;
+}
+
+#compareGrid .compare-card-grid .cell::after {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.compare-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.compare-card-subtitle {
+  font-size: 13px;
+  margin: 0;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns:
@@ -70,6 +275,163 @@ body.js-ready .module-warning {
 
 .control-panel {
   grid-area: controls;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.compare-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  min-width: 0;
+}
+
+.compare-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.compare-card-grid {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 128px;
+  max-height: 180px;
+  background: var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.compare-card-grid .cell {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+}
+
+.compare-card-grid .cell:hover {
+  outline: none;
+}
+
+#compareGrid .compare-card-grid .cell {
+  font-size: 0.72rem;
+}
+
+#compareGrid .compare-card-grid .cell.robot {
+  background: var(--robot);
+  color: white;
+}
+
+#compareGrid .compare-card-grid .cell.trash {
+  background: var(--trash);
+  color: white;
+}
+
+#compareGrid .compare-card-grid .cell.obstacle {
+  background: var(--obstacle);
+  color: white;
+}
+
+#compareGrid .compare-card-grid .cell.charger {
+  background: var(--charger);
+  color: white;
+}
+
+#compareGrid .compare-card-grid .cell.trash-can {
+  background: var(--trash-can);
+  color: white;
+}
+
+#compareGrid .compare-card-grid .cell.robot::after,
+#compareGrid .compare-card-grid .cell.robot.trash::after,
+#compareGrid .compare-card-grid .cell.robot.charger::after,
+#compareGrid .compare-card-grid .cell.robot.trash-can::after,
+#compareGrid .compare-card-grid .cell.robot.obstacle::after {
+  content: "R";
+}
+
+#compareGrid .compare-card-grid .cell::after {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.compare-card-body {
+  display: grid;
+  gap: 4px;
+}
+
+.compare-card-body .compare-stat {
+  font-size: 12px;
+}
+
+.compare-card-title {
+  font-size: 13px;
+}
+
+.compare-card-subtitle {
+  font-size: 12px;
+}
+
+.compare-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.compare-card-subtitle {
+  font-size: 13px;
+  margin: 0;
+}
+
+.compare-card-body {
+  display: grid;
+  gap: 6px;
+}
+
+.compare-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.compare-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.compare-status.done {
+  border-color: #22a06b;
+  color: #166534;
+}
+
+.compare-status.running {
+  border-color: #1769aa;
+  color: #0f4d7d;
+}
+
+.compare-status.stopped {
+  border-color: #d9e1ec;
+  color: var(--muted);
 }
 
 .section-header,

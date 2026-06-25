@@ -33,6 +33,11 @@ const elements = {
   runButton: document.getElementById("runButton"),
   stopButton: document.getElementById("stopButton"),
   spawnTrashButton: document.getElementById("spawnTrashButton"),
+  compareButton: document.getElementById("compareButton"),
+  comparePanel: document.getElementById("comparePanel"),
+  finalizeCompareButton: document.getElementById("finalizeCompareButton"),
+  closeCompareButton: document.getElementById("closeCompareButton"),
+  compareGrid: document.getElementById("compareGrid"),
   speedButtons: document.querySelectorAll(".speed-button"),
   batteryValue: document.getElementById("batteryValue"),
   capacityValue: document.getElementById("capacityValue"),
@@ -63,6 +68,7 @@ const renderer = new Renderer({
 });
 
 let simulator = null;
+let compareSimulators = [];
 
 function getMapConfigFromInputs() {
   updateCountLimitsFromInputs();
@@ -285,6 +291,24 @@ async function bindEvents() {
     commitPausedMapChange(nextState, nextState.latestAction);
   });
 
+  elements.compareButton.addEventListener("click", async () => {
+    if (simulator.isRunning()) {
+      return;
+    }
+
+    await openComparePanel();
+  });
+
+  if (elements.finalizeCompareButton) {
+    elements.finalizeCompareButton.addEventListener("click", finalizeComparePanel);
+  }
+
+  if (elements.closeCompareButton) {
+    elements.closeCompareButton.addEventListener("click", () => {
+      closeComparePanel();
+    });
+  }
+
   elements.gridMap.addEventListener("mouseover", (event) => {
     const cell = event.target.closest(".cell");
 
@@ -367,6 +391,199 @@ function setActiveSpeedButton(activeButton) {
   elements.speedButtons.forEach((button) => {
     button.classList.toggle("active", button === activeButton);
   });
+}
+
+// ─── Compare panel (animated) ────────────────────────────────────────────────
+
+async function openComparePanel() {
+  if (!elements.comparePanel || !elements.compareGrid) return;
+
+  // Dừng và xoá run cũ
+  compareSimulators.forEach(({ sim }) => sim.stop());
+  compareSimulators = [];
+  elements.compareGrid.innerHTML = "";
+  elements.comparePanel.classList.remove("hidden");
+
+  if (elements.finalizeCompareButton) {
+    elements.finalizeCompareButton.disabled = false;
+  }
+
+  const initialState = environment.getInitialState();
+
+  for (const definition of algorithmRegistry) {
+    const algorithm = await createAlgorithm(definition.id);
+    const compareEnv = new Environment();
+    compareEnv.loadState(initialState);
+
+    const { card, gridEl, statsEl, statusEl } = buildCompareCard(definition.label);
+    elements.compareGrid.appendChild(card);
+
+    // slot dùng để update DOM và để finalizeComparePanel tắt update
+    const slot = { gridEl, statsEl, statusEl, skipUpdates: false };
+
+    const sim = new Simulator({
+      environment: compareEnv,
+      algorithm,
+      onStateChange: (state) => {
+        if (slot.skipUpdates) return;
+        renderMiniGrid(gridEl, state);
+        updateCompareCardStats(slot, state, sim);
+        // Khi tất cả đã xong thì disable nút Final
+        if (state.map.done) {
+          const allDone = compareSimulators.every(({ env }) => env.getState().map.done);
+          if (allDone && elements.finalizeCompareButton) {
+            elements.finalizeCompareButton.disabled = true;
+          }
+        }
+      },
+      tickMs: 100,
+    });
+
+    compareSimulators.push({ sim, env: compareEnv, algorithm, slot });
+
+    // Render trạng thái ban đầu
+    renderMiniGrid(gridEl, compareEnv.getState());
+    updateCompareCardStats(slot, compareEnv.getState(), sim);
+
+    sim.run();
+  }
+}
+
+function buildCompareCard(label) {
+  const card = document.createElement("section");
+  card.className = "compare-card";
+
+  const header = document.createElement("div");
+  header.className = "compare-card-header";
+
+  const title = document.createElement("h3");
+  title.className = "compare-card-title";
+  title.textContent = label;
+
+  const statusEl = document.createElement("span");
+  statusEl.className = "compare-status running";
+  statusEl.textContent = "Running";
+
+  header.append(title, statusEl);
+
+  const gridEl = document.createElement("div");
+  gridEl.className = "compare-card-grid";
+
+  const statsEl = document.createElement("div");
+  statsEl.className = "compare-card-body";
+
+  card.append(header, gridEl, statsEl);
+  return { card, gridEl, statsEl, statusEl };
+}
+
+function updateCompareCardStats({ statsEl, statusEl }, state, sim, hitLimit = false) {
+  const metrics = sim.getAlgorithmMetricSummary();
+  const done = state.map.done;
+  const statusClass = done ? "done" : hitLimit ? "stopped" : "running";
+  const statusText = done ? "Done" : hitLimit ? "Stopped" : "Running";
+
+  statusEl.className = `compare-status ${statusClass}`;
+  statusEl.textContent = statusText;
+
+  const rows = [
+    ["Steps", state.steps],
+    ["Visited", metrics?.visitedNodes ?? "-"],
+    ["Runtime ms", typeof metrics?.runtimeMs === "number" ? metrics.runtimeMs.toFixed(2) : "-"],
+    ["Battery used", typeof metrics?.batteryConsumed === "number" ? Math.round(metrics.batteryConsumed * 10) / 10 : "-"],
+    ["Memory", metrics?.peakMemory ?? "-"],
+  ];
+
+  statsEl.innerHTML = "";
+  for (const [labelText, value] of rows) {
+    const row = document.createElement("div");
+    row.className = "compare-stat";
+    const labelEl = document.createElement("span");
+    labelEl.textContent = labelText;
+    const valueEl = document.createElement("strong");
+    valueEl.textContent = `${value}`;
+    row.append(labelEl, valueEl);
+    statsEl.appendChild(row);
+  }
+}
+
+function finalizeComparePanel() {
+  const MAX_STEPS = 2000;
+
+  if (elements.finalizeCompareButton) {
+    elements.finalizeCompareButton.disabled = true;
+  }
+
+  compareSimulators.forEach(({ sim, env, algorithm, slot }) => {
+    sim.stop();
+    slot.skipUpdates = true; // tắt per-step render
+
+    let state = env.getState();
+    let steps = 0;
+
+    while (!state.map.done && steps < MAX_STEPS) {
+      const prevBattery = state.robot.battery;
+      const action = algorithm.nextAction(state);
+      state = env.applyAction(action);
+      algorithm.addBatteryConsumed(Math.max(0, prevBattery - state.robot.battery));
+      steps++;
+    }
+
+    const hitLimit = steps >= MAX_STEPS && !state.map.done;
+    renderMiniGrid(slot.gridEl, state);
+    updateCompareCardStats(slot, state, sim, hitLimit);
+  });
+}
+
+function closeComparePanel() {
+  if (!elements.comparePanel) return;
+  compareSimulators.forEach(({ sim }) => sim.stop());
+  compareSimulators = [];
+  elements.comparePanel.classList.add("hidden");
+  elements.compareGrid.innerHTML = "";
+}
+
+function renderMiniGrid(container, state) {
+  const { map, robot } = state;
+  container.innerHTML = "";
+  container.style.display = "grid";
+  container.style.gridTemplateColumns = `repeat(${map.grid_size_x}, minmax(0, 1fr))`;
+  container.style.gridTemplateRows = `repeat(${map.grid_size_y}, minmax(0, 1fr))`;
+  container.style.gap = "1px";
+  container.style.background = "var(--border)";
+  container.style.aspectRatio = `${map.grid_size_x} / ${map.grid_size_y}`;
+
+  for (let y = 0; y < map.grid_size_y; y += 1) {
+    for (let x = 0; x < map.grid_size_x; x += 1) {
+      const position = { x, y };
+      const cell = document.createElement("div");
+      cell.className = "cell compare-mini-cell";
+
+      const hasObstacle = map.obstaclePositions.some((item) => item.x === x && item.y === y);
+      const hasTrash = map.trashPositions.some((item) => item.x === x && item.y === y);
+      const hasCharger = map.chargingStation.x === x && map.chargingStation.y === y;
+      const hasTrashCan = map.trashCan.x === x && map.trashCan.y === y;
+      const hasRobot = robot.x === x && robot.y === y;
+
+      if (hasObstacle) cell.classList.add("obstacle");
+      if (hasTrash) cell.classList.add("trash");
+      if (hasCharger) cell.classList.add("charger");
+      if (hasTrashCan) cell.classList.add("trash-can");
+      if (hasRobot) {
+        cell.classList.add("robot");
+        cell.textContent = "R";
+      } else if (hasTrash) {
+        cell.textContent = "T";
+      } else if (hasObstacle) {
+        cell.textContent = "#";
+      } else if (hasCharger) {
+        cell.textContent = "C";
+      } else if (hasTrashCan) {
+        cell.textContent = "B";
+      }
+
+      container.appendChild(cell);
+    }
+  }
 }
 
 function updateCountInputs(state) {
