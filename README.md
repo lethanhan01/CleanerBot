@@ -2,7 +2,6 @@
 
 Skeleton project cho môn Nhập môn AI: mô phỏng robot hút bụi trên web bằng HTML, CSS và JavaScript thuần.
 
-Project này chỉ tạo bộ khung để nhóm tiếp tục phát triển. Các thuật toán IDS, A*, IDA* chưa được cài đặt thật.
 
 ## Cấu trúc project
 
