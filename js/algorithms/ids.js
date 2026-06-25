@@ -177,7 +177,10 @@ export class IDSAlgorithm extends DFSAlgorithm {
       return null;
     }
 
-    const candidates = [...this.getMoveCandidates(current)].reverse();
+    // IDS duyệt đệ quy (không dùng stack như DFS) nên KHÔNG được .reverse():
+    // vòng for mở rộng ứng viên đầu tiên trước, nên giữ nguyên thứ tự
+    // getMoveCandidates (lên - phải - xuống - trái) để khớp với DFS.
+    const candidates = this.getMoveCandidates(current);
 
     for (const candidate of candidates) {
       const key = this.positionKey(candidate.position);
