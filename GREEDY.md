@@ -1,21 +1,21 @@
-# HƯỚNG DẪN IDS CHO PHẦN BẢO VỆ CLEANERBOT
+# HƯỚNG DẪN GREEDY BEST-FIRST SEARCH CHO PHẦN BẢO VỆ CLEANERBOT
 
-Tài liệu này dành cho phần bảo vệ thêm thuật toán IDS. Phần Environment và DFS vẫn học trong
+Tài liệu này dành cho phần bảo vệ thêm thuật toán Greedy Best-First Search. Phần Environment và DFS vẫn học trong
 HUONG_DAN_DFS_ENVIRONMENT_CHO_MINH.md.
 
 ---
 
 ## 1. Câu trả lời 30 giây
 
-> IDS, hay Iterative Deepening Search, chạy Depth-Limited DFS nhiều lần với giới hạn độ sâu tăng dần từ 0. Nhờ vậy, IDS tìm được nghiệm nông nhất giống BFS trên graph có chi phí mỗi bước bằng nhau, nhưng mỗi lần tìm kiếm vẫn mang đặc trưng chiều sâu của DFS. Đổi lại, các node ở tầng nông bị duyệt lại nhiều lần nên runtime có thể lớn hơn.
+> Greedy Best-First Search chọn bước đi tiếp theo dựa hoàn toàn vào heuristic h(n) — ước lượng khoảng cách đến goal — mà không tính chi phí đã đi. Vì vậy thuật toán thường nhanh, nhưng không đảm bảo tìm đường ngắn nhất và có thể bị kẹt.
 
 Trong project:
 
-- IDS đã được cài đặt thật trong js/algorithms/ids.js.
-- IDS có trong dropdown thuật toán và trang Compare.
-- IDS kế thừa logic điều phối, pin, hút, đổ và sạc.
-- IDS override phần tìm rác và tìm route bằng iterative deepening.
-- IDS không dùng heuristic.
+- Greedy đã được cài đặt thật trong js/algorithms/greedy.js.
+- Greedy có trong dropdown thuật toán và trang Compare.
+- Greedy kế thừa trực tiếp từ BaseAlgorithm, không qua BFS hay DFS.
+- Greedy dùng heuristic Manhattan distance có điều chỉnh penalty.
+- Greedy không cache route và không có route commitment như BFS/DFS/IDS.
 
 ---
 
@@ -25,67 +25,59 @@ Trong project:
 BaseAlgorithm
       ^
       |
-BFSAlgorithm
-      ^
-      |
-DFSAlgorithm
-      ^
-      |
-IDSAlgorithm
+GreedyAlgorithm
 ~~~
 
-IDS kế thừa:
+Greedy kế thừa:
 
-- từ BaseAlgorithm: metrics, trace và các helper chung;
-- từ BFSAlgorithm: bộ điều phối target, pin, hút, đổ, sạc và route cache;
-- từ DFSAlgorithm: route commitment, cache một chiều và một số helper;
-- tự override: cách tìm rác và cách tìm path.
+- từ BaseAlgorithm: metrics, trace, helper pin/vị trí, canMoveTo, manhattanDistance;
+- tự cài đặt: toàn bộ logic chọn target, chọn bước đi, kiểm tra pin, heuristic scoring.
 
-### Vì sao IDS kế thừa DFS?
+### Vì sao Greedy không kế thừa BFS?
 
-Vì IDS là DFS có giới hạn độ sâu được chạy lặp lại. Ngoài ra, project đã đặt route commitment của
-DFS trong lớp DFSAlgorithm, nên IDS tái sử dụng được hành vi đó.
+Greedy không dùng queue BFS, không dùng route cache, không dùng findPath() của BFS. Kiến trúc của Greedy hoàn toàn khác: thay vì lập kế hoạch trước một route rồi đi theo, Greedy ra quyết định từng bước một dựa trên heuristic tại thời điểm đó.
 
 ### Câu trả lời phòng vệ
 
-> IDS không gọi runDFS() của DFS để tìm đường. Nó kế thừa kiến trúc và route commitment, nhưng tự cài đặt findPath() bằng Depth-Limited Search với giới hạn tăng dần.
+> Greedy kế thừa BaseAlgorithm để tái sử dụng metrics và các helper chung, nhưng toàn bộ logic điều hướng là tự cài đặt theo heuristic greedy, không dùng bất kỳ code tìm đường nào của BFS hay DFS.
 
 ---
 
 ## 3. Ý tưởng thuật toán
 
-Giả sử goal nằm ở độ sâu 3:
+Greedy Best-First Search tại mỗi bước:
 
 ~~~text
-Lần 1: depthLimit = 0
-Lần 2: depthLimit = 1
-Lần 3: depthLimit = 2
-Lần 4: depthLimit = 3 -> tìm thấy goal
+1. Nhìn tất cả ô hàng xóm có thể đến.
+2. Tính score cho mỗi ô:
+       score = Manhattan(ô đó, target) + visits * VISIT_PENALTY + backtrack_penalty
+3. Chọn ô có score thấp nhất.
+4. Di chuyển vào ô đó.
 ~~~
 
 Pseudo-code:
 
 ~~~text
-for limit = 0 to maxDepth:
-    result = DepthLimitedSearch(start, limit)
-    if result found:
-        return result
-return failure
+computeNextAction(state):
+    xác định target (rác, thùng rác, hoặc trạm sạc)
+    nếu đang ở target:
+        thực hiện hành động tại target
+    
+    candidates = hàng xóm hợp lệ
+    với mỗi candidate:
+        score = Manhattan(candidate, target)
+               + visitCount(candidate) * VISIT_PENALTY
+               + backtrackPenalty(candidate)
+    
+    trả về hành động đến candidate có score nhỏ nhất
 ~~~
 
-Depth-Limited Search:
+Các hằng số trong code:
 
-~~~text
-DLS(node, remainingDepth):
-    nếu node là goal:
-        trả kết quả
-
-    nếu remainingDepth == 0:
-        dừng nhánh
-
-    với mỗi hàng xóm hợp lệ:
-        nếu chưa nằm trong path hiện tại:
-            tiếp tục DLS(hàng xóm, remainingDepth - 1)
+~~~js
+const VISIT_PENALTY = 3;
+const BACKTRACK_PENALTY = 10;
+const EPSILON = 1e-9;
 ~~~
 
 ---
@@ -94,194 +86,189 @@ DLS(node, remainingDepth):
 
 | Method | Vai trò |
 |---|---|
-| findNearestSafeTrashTarget() | Tìm rác gần nhất theo độ sâu và kiểm tra pin |
-| findNearestTrashTarget() | Tăng depthLimit từ 0 đến giới hạn tối đa |
-| depthLimitedTargetSearch() | Chạy một lượt DLS để tìm rác |
-| findPath() | Chạy IDS để tìm route từ start đến goal |
-| depthLimitedTraverse() | Hàm đệ quy Depth-Limited Search dùng chung |
-| getSearchDepthLimit() | Giới hạn độ sâu tối đa của map |
+| computeNextAction() | Điểm vào chính: xử lý hành động mỗi bước |
+| chooseWorkTarget() | Chọn target tiếp theo (rác, thùng rác, trạm sạc) |
+| chooseMoveTowardTarget() | Tính score heuristic và chọn bước di chuyển |
+| chooseShortestPathMoveToTarget() | Đi theo BFS path khi về trạm sạc |
+| findShortestPath() | BFS nội bộ chỉ dùng để tính pin và về trạm sạc |
+| rememberPosition() | Cập nhật visitCounts và previousPosition |
+| getVisitCount() | Lấy số lần đã ghé qua một ô |
+| getRequiredBatteryForTarget() | Tính pin cần thiết dùng Manhattan distance |
+| canMoveAndKeepChargingReserve() | Kiểm tra pin có đủ để về trạm sau khi di chuyển |
+| shouldCharge() | Quyết định có cần sạc ngay không |
 
 ---
 
-## 5. findPath() hoạt động thế nào?
+## 5. computeNextAction() hoạt động thế nào?
 
-### Bước 1: xử lý input đặc biệt
-
-Nếu thiếu start hoặc goal, trả null. Nếu start trùng goal, path chỉ có một node.
-
-### Bước 2: kiểm tra cache
-
-Nếu không có yêu cầu tránh bước đầu tiên, IDS thử lấy route đã cache.
-
-### Bước 3: iterative deepening
+### Bước 1: ghi nhớ vị trí
 
 ~~~js
-for (let depthLimit = 0; depthLimit <= maxDepth; depthLimit += 1) {
-  // chạy depthLimitedTraverse(...)
-}
+this.rememberPosition(robot);
+this.recordNodeVisit({ position: state.robot });
+this.recordMemoryUsage(1);
 ~~~
 
-Mỗi vòng lặp tạo lại:
+Greedy chỉ ghi nhớ 1 node mỗi bước — memory metric luôn là 1 trên mỗi quyết định.
 
-- path;
-- pathSet;
-- bestDepthByNode.
+### Bước 2: xử lý ưu tiên cao
 
-Nếu tìm thấy goal ở giới hạn đầu tiên có nghiệm, route đó có số bước nhỏ nhất.
+Theo thứ tự ưu tiên:
 
-### Bước 4: cache kết quả
+1. Nếu đang ở thùng rác và robot có rác → đổ rác (nếu đủ pin).
+2. Nếu đang ở trạm sạc và cần sạc → sạc.
+3. Nếu đang đứng trên rác và chưa đầy → hút rác (nếu đủ pin).
 
-Nếu tìm được route, IDS cache route. Nếu đã thử hết giới hạn mà không tìm thấy, IDS cache null.
+### Bước 3: chọn work target
+
+Gọi chooseWorkTarget() để xác định:
+
+- Nếu đầy rác hoặc hết rác trên map → trả về thùng rác.
+- Nếu còn rác → trả về rác gần nhất theo Manhattan mà pin full battery có thể xử lý.
+
+### Bước 4: kiểm tra pin
+
+Nếu target không phải trạm sạc nhưng không đủ pin để đi rồi thoát an toàn, chuyển target về trạm sạc. Nếu vẫn không đủ pin, gọi getChargingAction().
+
+### Bước 5: di chuyển
+
+Gọi chooseMoveTowardTarget() để tính score và chọn bước di chuyển.
 
 ---
 
-## 6. depthLimitedTraverse() hoạt động thế nào?
+## 6. chooseMoveTowardTarget() hoạt động thế nào?
 
-Hàm nhận:
+Đây là nơi heuristic thực sự được dùng.
 
-- state: trạng thái hiện tại;
-- path: đường đi hiện tại;
-- pathSet: các node đang nằm trên path;
-- remainingDepth: số cạnh còn được phép đi sâu;
-- onFound: callback kiểm tra goal hoặc trash;
-- avoidFirstStepKey: ô cần tránh ở bước đầu;
-- bestDepthByNode: độ sâu tốt nhất từng dùng để đến mỗi node.
-
-### Thứ tự xử lý
-
-1. Lấy node cuối của path.
-2. Ghi metrics.
-3. Gọi onFound(path).
-4. Nếu remainingDepth bằng 0, dừng mở rộng.
-5. Lấy các hàng xóm có thể đi.
-6. Loại ô đang có trong pathSet.
-7. Loại đường đến cùng node nhưng không tốt hơn độ sâu đã biết.
-8. Push hàng xóm vào path.
-9. Gọi đệ quy với remainingDepth giảm 1.
-10. Nếu thất bại, pop để backtrack.
-
----
-
-## 7. Vai trò của pathSet
-
-pathSet chỉ chứa các node trên nhánh đang xét.
-
-Ví dụ:
-
-~~~text
-A -> B -> C
+~~~js
+score = distance + visits * VISIT_PENALTY + backtrackPenalty
 ~~~
 
-Khi đang ở C, thuật toán không được quay lại A hoặc B trong cùng path, vì sẽ tạo chu trình.
+Chi tiết:
 
-Khi backtrack khỏi C, C được xóa khỏi pathSet, nên một nhánh khác vẫn có thể đi qua C nếu cần.
+- **distance**: `manhattanDistance(candidate.position, target)` — thành phần heuristic chính.
+- **visits**: số lần robot đã ghé qua ô đó, nhân với `VISIT_PENALTY = 3`.
+- **backtrackPenalty**: nếu candidate là ô robot vừa đứng trước đó (previousPosition) và không phải target → cộng thêm `BACKTRACK_PENALTY = 10`.
 
-### Khác visited của DFS
+Tie-breaking khi score bằng nhau:
 
-- DFS dùng visited toàn cục trong một lượt tìm kiếm.
-- IDS dùng pathSet để chống chu trình trên path hiện tại.
-- IDS còn dùng bestDepthByNode để giảm việc mở rộng lại một node bằng đường không tốt hơn.
-
----
-
-## 8. Vai trò của bestDepthByNode
-
-Map này ghi lại độ sâu nhỏ nhất đã biết để đến mỗi node trong một lượt DLS.
-
-Nếu node X đã được đến ở độ sâu 3, một đường khác đến X ở độ sâu 5 không có lợi hơn vì nó để lại ít
-ngân sách độ sâu hơn.
-
-~~~text
-bestSeenDepth <= nextDepth -> bỏ nhánh mới
+~~~js
+a.score - b.score || a.distance - b.distance || a.visits - b.visits || a.index - b.index
 ~~~
 
-Nếu sau đó tìm được đường đến X ở độ sâu 2, nhánh mới vẫn được phép vì tốt hơn.
+### Ngoại lệ: đi về trạm sạc
+
+Khi target là trạm sạc, Greedy không dùng heuristic mà gọi chooseShortestPathMoveToTarget() → chạy BFS nội bộ để đảm bảo tìm được đường.
 
 ### Câu trả lời phòng vệ
 
-> pathSet chống chu trình trong nhánh hiện tại, còn bestDepthByNode tránh mở rộng lại cùng node bằng một đường sâu hơn hoặc bằng nhau trong cùng lượt Depth-Limited Search.
+> Greedy dùng heuristic Manhattan khi di chuyển đến rác hoặc thùng rác, nhưng khi cần về trạm sạc nó tự chuyển sang BFS để đảm bảo về được. Đây là thiết kế thực tế để tránh robot bị kẹt khi pin cạn.
 
 ---
 
-## 9. IDS chọn rác như thế nào?
+## 7. Vai trò của visitCounts và previousPosition
 
-findNearestSafeTrashTarget():
+### visitCounts
 
-1. Chạy IDS để tìm rác ở độ sâu nhỏ nhất.
-2. Dùng route IDS thật để kiểm tra pin.
-3. Nếu đủ pin, chọn rác đó.
-4. Nếu không đủ pin, thêm rác vào rejectedTrashKeys.
-5. Chạy lại để tìm rác an toàn khác.
+Map lưu số lần robot đã ghé qua mỗi ô trong suốt một lần chạy. Giá trị này tăng mỗi khi robot di chuyển đến ô mới.
 
-Vì map là unweighted grid, mỗi bước có cùng chi phí di chuyển, nên độ sâu chính là số bước.
-
-### Nếu có nhiều rác cùng độ sâu
-
-Rác được gặp trước phụ thuộc thứ tự hàng xóm. Project dùng thứ tự kế thừa từ BFS rồi đảo trước khi
-đệ quy để giữ thứ tự mở rộng mong muốn.
-
-### Có phải IDS tối ưu toàn bộ lịch trình gom rác không?
-
-Không. IDS chỉ tìm route ngắn nhất đến target hiện tại. Nó không tối ưu toàn bộ thứ tự:
+Mục đích: phạt các ô đã ghé nhiều lần, khuyến khích robot khám phá ô mới thay vì lặp vòng.
 
 ~~~text
-trash 1 -> trash 2 -> trash can -> station
+Ô A đã ghé 5 lần → score tăng thêm 5 * 3 = 15
+~~~
+
+### previousPosition
+
+Lưu vị trí robot ở bước trước đó. Mục đích: phạt nặng (BACKTRACK_PENALTY = 10) nếu robot định quay lại ô vừa rời, trừ khi đó là target.
+
+### Khác với visited của BFS/DFS
+
+- BFS/DFS dùng visited để loại hoàn toàn các ô đã đi khỏi hàng đợi.
+- Greedy không loại ô nào — nó chỉ phạt score, nên robot vẫn có thể quay lại ô cũ nếu không còn lựa chọn tốt hơn.
+
+---
+
+## 8. findShortestPath() trong Greedy là gì?
+
+Greedy có một hàm findShortestPath() chạy BFS nội bộ. Hàm này **không** phải là thuật toán tìm đường chính của Greedy — nó được dùng cho hai mục đích phụ:
+
+1. **Kiểm tra pin**: tính số bước thực tế để ước lượng pin cần thiết qua getShortestPathDistance().
+2. **Về trạm sạc**: chooseShortestPathMoveToTarget() dùng findShortestPath() để đảm bảo robot tìm được đường về.
+
+### Câu trả lời phòng vệ
+
+> findShortestPath() trong Greedy là BFS helper nội bộ, không phải thuật toán điều hướng chính. Greedy vẫn dùng heuristic score để chọn từng bước đi đến rác và thùng rác.
+
+---
+
+## 9. Greedy chọn rác như thế nào?
+
+chooseWorkTarget() gọi findNearestPosition() — hàm dùng **Manhattan distance** để chọn rác gần nhất trong danh sách các rác mà pin full battery có thể xử lý.
+
+~~~text
+manageableTrashPositions = filter rác bằng canFullBatteryHandleTarget()
+target = argmin Manhattan(robot, trash) trong danh sách đó
+~~~
+
+Greedy **không** chạy BFS để tìm rác — nó chọn theo Manhattan. Do đó, target được chọn là rác gần nhất theo đường chim bay, không phải rác gần nhất theo đường đi thực tế.
+
+### Nếu có nhiều rác cùng Manhattan distance
+
+Rác được chọn phụ thuộc vào thứ tự trong mảng trashPositions và cách reduce hoạt động (giữ phần tử đầu tiên khi bằng nhau).
+
+### Greedy có tối ưu toàn bộ lịch trình không?
+
+Không. Greedy chỉ chọn rác gần nhất theo Manhattan tại mỗi thời điểm, không tối ưu toàn bộ thứ tự:
+
+~~~text
+trash 1 → trash 2 → trash can → station
 ~~~
 
 ---
 
-## 10. IDS kiểm tra pin và sạc
+## 10. Greedy kiểm tra pin như thế nào?
 
-IDS kế thừa logic pin từ BFSAlgorithm.
+Greedy **không** dùng route thật như BFS/IDS để kiểm tra pin. Nó dùng Manhattan distance qua getShortestPathDistance() → findShortestPath() (BFS) để ước lượng khoảng cách.
 
-Pin cần thiết có thể gồm:
+Hàm getRequiredBatteryForTarget() tính pin cần thiết bao gồm:
 
-- đi từ robot đến rác;
-- 1 pin để hút;
-- đi từ rác về trạm;
-- hoặc đi đến thùng rác nếu sau khi hút sẽ đầy;
-- 1 pin để đổ;
-- đi từ thùng rác về trạm.
+- Di chuyển từ robot đến target.
+- Chi phí hành động tại target (hút/đổ).
+- Di chuyển từ target về điểm an toàn tiếp theo.
 
 ~~~text
-movementCost = (path.length - 1) * batteryLoss
+Nếu target là rác, chưa đầy:
+    pin = (robot→rác) * loss + actionCost + (rác→station) * loss
+
+Nếu target là rác, sẽ đầy sau khi hút:
+    pin = (robot→rác) * loss + actionCost + (rác→thùng) * loss + actionCost + (thùng→station) * loss
 ~~~
 
-Điểm quan trọng:
+### Điểm quan trọng
 
-> IDS dùng route IDS thực tế để tính pin, không dùng Manhattan.
-
-Vì IDS tìm route ngắn nhất theo số bước, phép kiểm tra pin thường ít bảo thủ hơn DFS trên cùng target.
+> Greedy dùng BFS nội bộ để tính khoảng cách thực tế cho phép kiểm tra pin, nhưng dùng heuristic score để ra quyết định di chuyển từng bước.
 
 ---
 
 ## 11. Tính đầy đủ và tối ưu
 
-### IDS có đầy đủ không?
+### Greedy có đầy đủ không?
 
-Có trong không gian trạng thái hữu hạn của project, nếu có route đến goal và giới hạn tối đa đủ lớn.
+**Không đảm bảo.** Greedy có thể bị kẹt trong chu trình nếu các penalty không đủ mạnh để phá vòng. Trong project, visitCounts và backtrack penalty giúp giảm khả năng này, nhưng không đảm bảo hoàn toàn với mọi map.
 
-getSearchDepthLimit() dùng:
+### Greedy có tối ưu không?
+
+**Không.** Greedy chỉ nhìn heuristic h(n), không tính chi phí đã đi g(n). Đường tìm được thường dài hơn đường ngắn nhất.
+
+### Greedy có dùng heuristic không?
+
+**Có.** Đây là điểm phân biệt lớn nhất với DFS, BFS và IDS. Greedy là thuật toán informed search duy nhất trong project không phải A*/IDA*.
 
 ~~~text
-số ô đi được - 1
+Heuristic: h(n) = Manhattan(n, target)
+Greedy score = h(n) + visit_penalty + backtrack_penalty
 ~~~
-
-Một simple path trên graph hữu hạn không cần dài hơn số node trừ 1.
-
-### IDS có tối ưu không?
-
-Có theo số bước trong project vì:
-
-- mỗi cạnh di chuyển có cùng chi phí;
-- depth limit tăng lần lượt 0, 1, 2, ...;
-- nghiệm đầu tiên xuất hiện ở độ sâu nhỏ nhất.
-
-Không nên nói IDS tối ưu nếu các cạnh có chi phí khác nhau.
-
-### IDS có dùng heuristic không?
-
-Không. IDS là uninformed search.
 
 ---
 
@@ -289,74 +276,72 @@ Không. IDS là uninformed search.
 
 Ký hiệu:
 
-- b: branching factor;
-- d: độ sâu nghiệm nông nhất.
+- n: số ô đi được trên map;
+- b: branching factor (thường ≤ 4 trên grid);
+- d: độ sâu nghiệm.
 
-Lý thuyết thường dùng:
+Lý thuyết cơ bản:
 
 ~~~text
-Time:   O(b^d)
-Memory: O(bd)
+Time:   O(b^m) với m là độ sâu tối đa (không đảm bảo tối ưu)
+Memory: O(b^m) nếu dùng queue (Greedy dùng greedy move, không có queue)
 ~~~
-
-IDS duyệt lại tầng nông nhiều lần, nhưng số node ở tầng sâu nhất thường chiếm phần lớn nên overhead
-không nhất thiết quá lớn khi b lớn hơn 1.
 
 ### Lưu ý với implementation project
 
-Không nên khẳng định memory đúng tuyệt đối là O(bd) vì code còn có:
+Greedy trong project **không dùng priority queue hay open list**. Nó ra quyết định từng bước mà không lưu trạng thái tương lai, nên:
 
-- bestDepthByNode;
-- route cache;
-- metrics trace;
-- các object vị trí.
+- Memory mỗi bước: O(1) candidates (4 hàng xóm).
+- Không đảm bảo tìm thấy goal dù có tồn tại route.
 
 Nên nói:
 
-> IDS có đặc trưng bộ nhớ gần DFS hơn BFS, nhưng metric và implementation cụ thể còn lưu thêm map độ sâu, cache và trace.
+> Greedy trong project quyết định từng bước theo heuristic score mà không duy trì frontier, nên memory dùng thực tế rất thấp, nhưng không đảm bảo đầy đủ hay tối ưu.
 
 ---
 
-## 13. So sánh DFS, IDS và BFS
+## 13. So sánh Greedy, BFS, DFS và IDS
 
-| Tiêu chí | DFS | IDS | BFS |
-|---|---|---|---|
-| Cấu trúc chính | Stack | DLS lặp với limit tăng dần | Queue |
-| Đầy đủ trên graph hữu hạn | Có với visited | Có | Có |
-| Đường ngắn nhất theo số bước | Không | Có | Có |
-| Duyệt lại tầng nông | Không đáng kể | Có | Không |
-| Frontier memory lý thuyết | Thấp | Gần DFS | Có thể cao |
-| Heuristic | Không | Không | Không |
-| Target trash | Rác đầu tiên theo DFS | Rác ở độ sâu nhỏ nhất | Rác ở độ sâu nhỏ nhất |
+| Tiêu chí | Greedy | BFS | DFS | IDS |
+|---|---|---|---|---|
+| Cấu trúc chính | Heuristic step-by-step | Queue | Stack | DLS lặp với limit tăng dần |
+| Heuristic | Có (Manhattan + penalty) | Không | Không | Không |
+| Đầy đủ | Không đảm bảo | Có | Có với visited | Có |
+| Đường ngắn nhất theo số bước | Không | Có | Không | Có |
+| Memory frontier lý thuyết | Rất thấp (O(1) per step) | Có thể cao | Thấp | Gần DFS |
+| Target trash | Rác gần nhất theo Manhattan | Rác gần nhất theo BFS path | Rác đầu tiên theo DFS | Rác ở độ sâu nhỏ nhất |
+| Kiểm tra pin | BFS nội bộ để ước lượng | Route BFS thật | Manhattan | Route IDS thật |
 
 ### Câu so sánh dễ ghi điểm
 
-> IDS kết hợp thứ tự mở rộng theo chiều sâu của DFS với tính tối ưu theo độ sâu của BFS. Cái giá phải trả là tìm kiếm lặp lại ở các tầng nông.
+> Greedy là thuật toán informed duy nhất trong nhóm DFS/BFS/IDS/Greedy. Nó thường nhanh vì hướng thẳng về goal theo heuristic, nhưng không đảm bảo tối ưu và có thể bị kẹt. BFS và IDS chậm hơn nhưng tìm đường ngắn nhất; DFS nhanh nhưng không tối ưu.
 
 ---
 
-## 14. Khác IDS với IDA*
+## 14. Khác Greedy với A* và IDA*
 
 Không được nhầm:
 
 ~~~text
-IDS:  tăng giới hạn depth
-IDA*: tăng giới hạn f = g + h
+Greedy: chỉ dùng h(n) = heuristic đến goal
+A*:     dùng f(n) = g(n) + h(n), cân bằng chi phí đã đi và heuristic
+IDA*:   dùng ngưỡng f = g + h, tăng dần mỗi iteration
 ~~~
 
-IDS không dùng heuristic. IDA* dùng heuristic Manhattan trong project.
+A* và IDA* đảm bảo tối ưu với heuristic admissible. Greedy không đảm bảo tối ưu dù dùng cùng heuristic Manhattan.
 
 ---
 
 ## 15. Những giới hạn cần chủ động thừa nhận
 
-1. IDS duyệt lại nhiều node nên visitedNodes và runtime có thể cao.
-2. Hàm DLS dùng đệ quy; map rất lớn có thể gặp giới hạn call stack.
-3. Project chỉ tối ưu từng route, không tối ưu toàn bộ lịch trình gom rác.
-4. Map chỉnh tay có thể mất liên thông.
-5. Một map liên thông vẫn có thể không khả thi với pin tối đa.
-6. Metric memory không phải số byte RAM thật.
-7. IDS có test riêng cho path ngắn nhất, chọn rác và hoàn thành nhiệm vụ, nhưng chưa phải kiểm chứng hình thức cho mọi map.
+1. Greedy không đảm bảo đầy đủ — có thể bị kẹt dù có route đến goal.
+2. Greedy không đảm bảo tối ưu — route tìm được thường dài hơn BFS/IDS.
+3. Greedy chọn rác theo Manhattan, không theo đường đi thực tế — có thể chọn rác ở "gần" theo đường chim bay nhưng thực ra bị vật cản.
+4. visitCounts và backtrack penalty giúp phá vòng nhưng không đảm bảo hoàn toàn.
+5. Khi về trạm sạc, Greedy dùng BFS thay heuristic — không thuần Greedy.
+6. Metric memory (1 mỗi bước) phản ánh thiết kế step-by-step, không phải bộ nhớ RAM thật.
+7. Greedy không tối ưu toàn bộ lịch trình gom rác, chỉ tối ưu cục bộ từng bước.
+8. Map chỉnh tay có thể mất liên thông hoặc không khả thi với pin tối đa.
 
 ---
 
@@ -367,19 +352,18 @@ IDS không dùng heuristic. IDA* dùng heuristic Manhattan trong project.
 Tạo map có:
 
 - robot ở góc trái;
-- một target ở gần;
-- vật cản khiến DFS đi vòng dài;
-- vẫn tồn tại một route ngắn rõ ràng.
+- một target ở gần theo đường thẳng nhưng có vật cản;
+- một target khác xa hơn theo Manhattan nhưng đường thực tế ngắn hơn.
 
 Chạy lần lượt:
 
-1. DFS.
+1. BFS — tìm đường ngắn nhất thực sự.
 2. Reset map.
-3. IDS.
+3. Greedy — chọn target theo Manhattan, route có thể khác.
 
 ### Lời nói
 
-> Hai thuật toán dùng cùng Environment và cùng luật pin. DFS đi sâu theo thứ tự node nên route có thể dài. IDS chạy DFS giới hạn độ sâu từ nhỏ lên lớn, nên chỉ khi không có nghiệm ở tầng nông nó mới cho phép đi sâu hơn. Vì vậy IDS tìm route ngắn nhất theo số bước, nhưng số node duyệt có thể tăng do lặp lại các tầng nông.
+> Greedy hướng thẳng về goal theo ước lượng Manhattan. Trên map không có vật cản, Greedy thường đi nhanh gần với BFS. Trên map có nhiều vật cản, Greedy có thể chọn nhầm hướng vì heuristic không tính đến vật cản. Đó là sự đánh đổi giữa tốc độ và tính đúng đắn.
 
 ### Chỉ số nên chỉ
 
@@ -389,119 +373,125 @@ Chạy lần lượt:
 - Required memory.
 - Battery consumed.
 
-Không hứa trước IDS luôn nhanh hơn hoặc luôn dùng ít memory hơn trên mọi map.
+Không hứa trước Greedy luôn nhanh hơn hoặc luôn dùng ít memory hơn trên mọi map.
 
 ---
 
 ## 17. Câu hỏi phản biện
 
-### 1. Tại sao không dùng BFS luôn?
+### 1. Tại sao Greedy không đảm bảo tối ưu?
 
-> BFS cũng tìm đường ngắn nhất, nhưng phải giữ frontier theo từng tầng. IDS minh họa một đánh đổi khác: dùng tìm kiếm chiều sâu lặp để giảm frontier memory theo tinh thần DFS, đổi lại phải duyệt lại tầng nông.
+> Vì Greedy chỉ nhìn h(n) — khoảng cách đến goal — mà không tính g(n) — chi phí đã đi. Nó có thể chọn bước trông có vẻ gần goal nhưng thực ra đi vòng.
 
-### 2. Tại sao IDS tìm được đường ngắn nhất?
+### 2. Tại sao Greedy có thể bị kẹt?
 
-> Vì depth limit tăng từng đơn vị. Nếu goal đầu tiên xuất hiện ở limit d thì đã chứng minh không có goal nào ở độ sâu nhỏ hơn d.
+> Nếu hướng về goal bị chặn hoàn toàn, Greedy không có cơ chế backtrack có hệ thống. visitCounts penalty giúp giảm nguy cơ lặp vòng, nhưng không đảm bảo thoát được mọi tình huống.
 
-### 3. Nếu có hai goal cùng độ sâu thì sao?
+### 3. Greedy có phải informed search không?
 
-> Cả hai đều tối ưu theo số bước. Goal được chọn trước phụ thuộc thứ tự mở rộng hàng xóm.
+> Có. Greedy dùng heuristic h(n) để hướng dẫn tìm kiếm. Đây là điểm khác biệt với BFS, DFS và IDS đều là uninformed search.
 
-### 4. Tại sao reset pathSet sau mỗi depth limit?
+### 4. Tại sao Greedy dùng BFS để về trạm sạc?
 
-> Mỗi limit là một lượt tìm kiếm độc lập. Nếu giữ dữ liệu visited từ lượt trước, các node tầng nông có thể bị chặn và IDS mất tính đúng đắn.
+> Khi về trạm sạc để tránh hết pin, cần đảm bảo chắc chắn tìm được đường. Heuristic greedy có thể không tìm được đường trong mọi trường hợp nên lúc đó Greedy tự chuyển sang chooseShortestPathMoveToTarget() dùng BFS để đảm bảo an toàn.
 
-### 5. Tại sao dùng pathSet thay vì visited toàn cục?
+### 5. VISIT_PENALTY và BACKTRACK_PENALTY có ý nghĩa gì?
 
-> DLS cần cho phép cùng node được xem xét qua một đường tốt hơn trong cùng limit hoặc trong iteration khác. pathSet ngăn chu trình trên nhánh hiện tại, còn bestDepthByNode loại các đường không tốt hơn.
+> VISIT_PENALTY (3) phạt ô đã đi nhiều lần để khuyến khích khám phá mới. BACKTRACK_PENALTY (10) phạt nặng việc quay ngay lại ô vừa rời để tránh lặp lại hai ô. Hai giá trị này được chọn bằng thực nghiệm.
 
-### 6. Vì sao giới hạn tối đa là số ô đi được trừ 1?
+### 6. Heuristic của Greedy có admissible không?
 
-> Nếu route tồn tại thì có một simple path không lặp node. Simple path dài nhất trên graph V node có tối đa V - 1 cạnh.
+> Manhattan distance là admissible trên grid không trọng số vì không bao giờ ước lượng quá khoảng cách thực. Tuy nhiên, sau khi cộng VISIT_PENALTY và BACKTRACK_PENALTY, heuristic tổng hợp không còn admissible — nó có thể ước lượng cao hơn chi phí thực. Do đó không thể dùng heuristic tổng hợp này cho A* mà vẫn đảm bảo tối ưu.
 
-### 7. IDS có phải heuristic search không?
+### 7. Greedy có dùng code BFS không?
 
-> Không. IDS không có hàm h(n), chỉ tăng depth limit.
+> Greedy có hàm findShortestPath() chạy BFS nội bộ, nhưng chỉ để tính khoảng cách cho phép kiểm tra pin và để về trạm sạc. Logic điều hướng chính dùng heuristic score, không phải BFS route.
 
-### 8. IDS có dùng code DFS không?
+### 8. Greedy khác A* ở điểm nào cụ thể trong code?
 
-> IDS kế thừa kiến trúc của DFS nhưng không dùng runDFS() để tìm path. Nó tự cài đặt Depth-Limited Search trong depthLimitedTraverse().
+> A* trong project dùng priority queue (min-heap) với khóa là f = g + h, đảm bảo mở rộng node theo chi phí tổng hợp. Greedy chỉ tính score = h(n) + penalty để chọn bước kế tiếp trong 4 hàng xóm, không duy trì open list.
 
-### 9. IDS có thể hết pin giữa đường không?
+### 9. Greedy có thể hết pin giữa đường không?
 
-> Trước khi chọn target, bộ điều phối kiểm tra pin bằng route IDS thật và cả đường thoát an toàn. Tuy vậy, không nên khẳng định hệ thống hoàn hảo cho mọi map chỉnh tay hoặc mọi tình huống ngoài mô hình.
+> Trước khi di chuyển, canMoveAndKeepChargingReserve() kiểm tra xem sau khi di chuyển có đủ pin để về trạm sạc không. Nếu không, robot dừng lại (STAY). Tuy vậy, không nên khẳng định hệ thống hoàn hảo cho mọi map chỉnh tay.
 
 ### 10. Điểm cải tiến tiếp theo là gì?
 
-> Có thể tách bộ điều phối khỏi BFS thành lớp riêng, thêm watchdog maxSteps, và dùng parent pointer để giảm object/path được tạo trong tìm kiếm.
+> Có thể cải tiến bằng cách dùng A* thay vì greedy step-by-step để đảm bảo tối ưu, hoặc thêm look-ahead để phát hiện dead-end trước khi di chuyển vào.
 
 ---
 
 ## 18. Những câu không nên nói
 
-### Sai: “IDS không duyệt lại node.”
+### Sai: "Greedy tìm đường ngắn nhất."
 
 Nên nói:
 
-> IDS cố ý duyệt lại các tầng nông khi tăng depth limit.
+> Greedy hướng về goal nhanh theo heuristic, nhưng không đảm bảo đường ngắn nhất. BFS và IDS mới tìm đường ngắn nhất theo số bước.
 
-### Sai: “IDS luôn nhanh hơn BFS.”
-
-Nên nói:
-
-> Hiệu năng phụ thuộc map; IDS có overhead tìm kiếm lặp.
-
-### Sai: “IDS luôn dùng O(d) memory trong code này.”
+### Sai: "Greedy luôn nhanh hơn BFS."
 
 Nên nói:
 
-> Lý thuyết frontier của IDS gần DFS, nhưng code còn lưu bestDepthByNode, cache và metrics.
+> Greedy thường ít duyệt node hơn BFS khi heuristic tốt, nhưng hiệu năng phụ thuộc map và vật cản.
 
-### Sai: “IDS và IDA* giống nhau.”
-
-Nên nói:
-
-> IDS tăng depth limit; IDA* tăng ngưỡng f = g + h.
-
-### Sai: “IDS tối ưu toàn bộ nhiệm vụ.”
+### Sai: "Greedy không dùng BFS."
 
 Nên nói:
 
-> IDS tối ưu route đến target hiện tại theo số bước, không tối ưu toàn bộ thứ tự target.
+> Greedy có BFS nội bộ để tính khoảng cách kiểm tra pin và để về trạm sạc, nhưng heuristic greedy mới là cơ chế điều hướng chính khi đến rác và thùng rác.
+
+### Sai: "Greedy và A* giống nhau vì cùng dùng Manhattan."
+
+Nên nói:
+
+> Cả hai dùng Manhattan làm heuristic, nhưng A* cộng thêm g(n) để đảm bảo tối ưu, còn Greedy chỉ dùng h(n) nên nhanh hơn nhưng không đảm bảo.
+
+### Sai: "Greedy tối ưu toàn bộ nhiệm vụ."
+
+Nên nói:
+
+> Greedy chọn hướng di chuyển tốt nhất theo heuristic tại mỗi bước, không tối ưu toàn bộ thứ tự target hay route.
+
+### Sai: "Memory của Greedy là O(1) hoàn toàn."
+
+Nên nói:
+
+> Greedy không duy trì frontier lớn, nhưng còn lưu visitCounts, findShortestPath cache, và metrics trace. Memory metric trong UI là 1 mỗi bước quyết định, phản ánh thiết kế step-by-step.
 
 ---
 
 ## 19. Checklist trước bảo vệ
 
-- [ ] IDS viết tắt của gì?
-- [ ] Iterative deepening hoạt động thế nào?
-- [ ] Depth-Limited Search dừng ở đâu?
-- [ ] IDS kế thừa những gì từ DFS/BFS?
-- [ ] Method nào thật sự cài IDS?
-- [ ] pathSet làm gì?
-- [ ] bestDepthByNode làm gì?
-- [ ] Vì sao IDS đầy đủ?
-- [ ] Vì sao IDS tối ưu theo số bước?
-- [ ] Khi nào không được nói IDS tối ưu?
-- [ ] IDS kiểm tra pin bằng route nào?
-- [ ] IDS khác DFS, BFS và IDA* thế nào?
-- [ ] Điểm yếu lớn nhất của IDS là gì?
+- [ ] Greedy Best-First Search là gì?
+- [ ] Heuristic của Greedy trong project là gì?
+- [ ] VISIT_PENALTY và BACKTRACK_PENALTY làm gì?
+- [ ] Vì sao Greedy không đảm bảo tối ưu?
+- [ ] Vì sao Greedy có thể bị kẹt?
+- [ ] Greedy kế thừa từ lớp nào?
+- [ ] findShortestPath() trong Greedy dùng để làm gì?
+- [ ] Khi nào Greedy chuyển sang BFS?
+- [ ] Greedy chọn rác theo tiêu chí nào?
+- [ ] Heuristic admissible có ảnh hưởng gì đến Greedy?
+- [ ] Greedy kiểm tra pin bằng cách nào?
+- [ ] Greedy khác BFS, DFS, IDS và A* thế nào?
+- [ ] Điểm yếu lớn nhất của Greedy là gì?
 
 ---
 
 ## 20. Tờ ghi nhớ 45 giây
 
-1. IDS = Iterative Deepening Search.
-2. IDS chạy Depth-Limited DFS với limit 0, 1, 2, ...
-3. IDS không dùng heuristic.
-4. IDS tìm nghiệm nông nhất trên unweighted grid.
-5. IDS đầy đủ trên graph hữu hạn khi limit đủ lớn.
-6. IDS duyệt lại tầng nông nên runtime/visited nodes có thể tăng.
-7. pathSet chống chu trình trong path hiện tại.
-8. bestDepthByNode loại đường đến node không tốt hơn.
-9. IDS dùng route thật để kiểm tra pin.
-10. IDS chỉ tối ưu từng route, không tối ưu toàn bộ lịch trình.
+1. Greedy Best-First Search = chọn bước theo h(n), không tính g(n).
+2. Heuristic chính: Manhattan distance đến target.
+3. Có penalty: visits * 3 và backtrack * 10.
+4. Không đảm bảo đầy đủ hay tối ưu.
+5. Greedy là informed search; DFS, BFS, IDS là uninformed.
+6. Khi về trạm sạc, Greedy tự chuyển sang BFS nội bộ.
+7. Chọn rác theo Manhattan, không theo đường đi thực tế.
+8. Memory mỗi bước quyết định là O(1) candidates.
+9. Không cache route — ra quyết định từng bước.
+10. Phân biệt: Greedy chỉ dùng h(n), A* dùng g(n) + h(n).
 
 ### Câu kết
 
-> DFS cho thấy sức mạnh và hạn chế của tìm kiếm chiều sâu. IDS cải thiện tính tối ưu theo độ sâu bằng cách chạy DFS có giới hạn nhiều lần, tạo ra một điểm cân bằng thú vị giữa BFS và DFS.
+> Greedy Best-First Search minh họa sức mạnh và giới hạn của heuristic search thuần túy: khi heuristic tốt và map đơn giản, nó nhanh và hiệu quả; khi có vật cản phức tạp, nó có thể đi vòng hoặc bị kẹt. A* giải quyết giới hạn này bằng cách cân bằng heuristic với chi phí đã đi.
