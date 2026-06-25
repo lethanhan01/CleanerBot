@@ -29,12 +29,7 @@ export const algorithmRegistry = [
     label: "Dijkstra",
     loadClass: () => import("./dijkstra.js").then((module) => module.DijkstraAlgorithm),
   },
-  {
-    id: "greedy-best-first",
-    label: "Greedy Best-First",
-    loadClass: () => import("./greedy-best-first.js").then((module) => module.GreedyBestFirstAlgorithm),
-  },
-  {
+{
     id: "greedy",
     label: "Greedy",
     loadClass: () => import("./greedy.js").then((module) => module.GreedyAlgorithm),
