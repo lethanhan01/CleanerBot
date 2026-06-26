@@ -2,7 +2,11 @@ import { Environment } from "./environment.js";
 import { Simulator } from "./simulator.js";
 import { Renderer } from "./render.js";
 import { algorithmRegistry, createAlgorithm } from "./algorithms/registry.js";
-import { createAlgorithmComparisonMap10x10 } from "./sampleMaps.js";
+import {
+  createAlgorithmComparisonMap10x10,
+  listBuiltInSavedMaps,
+  loadBuiltInSavedMap,
+} from "./sampleMaps.js";
 import { MapStorage } from "./mapStorage.js?v=3";
 
 document.body.classList.add("js-ready");
@@ -122,7 +126,7 @@ function updateButtonState() {
   elements.savedMapSelect.disabled = !isReady || isRunning || elements.savedMapSelect.options.length <= 1;
   elements.saveMapButton.disabled = !isReady || isRunning || !elements.mapNameInput.value.trim();
   elements.loadSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
-  elements.deleteSavedMapButton.disabled = !isReady || isRunning || !elements.savedMapSelect.value;
+  elements.deleteSavedMapButton.disabled = !isReady || isRunning || getSelectedSavedMapSource() !== "server";
   elements.spawnTrashButton.disabled = !isReady || isRunning;
   elements.stopButton.disabled = !isRunning;
 }
@@ -194,11 +198,24 @@ async function bindEvents() {
 
   elements.loadSavedMapButton.addEventListener("click", async () => {
     try {
-      const selectedName = elements.savedMapSelect.value;
-      simulator.loadState(await mapStorage.load(selectedName));
+      const selectedMap = getSelectedSavedMap();
+
+      if (!selectedMap) {
+        return;
+      }
+
+      const nextState = selectedMap.source === "built-in"
+        ? loadBuiltInSavedMap(selectedMap.name)
+        : await mapStorage.load(selectedMap.name);
+
+      simulator.loadState(nextState);
       updateInputsFromState(environment.getInitialState());
-      elements.mapNameInput.value = selectedName;
-      showStorageMessage(`Loaded saved map "${selectedName}".`);
+      elements.mapNameInput.value = selectedMap.name;
+      showStorageMessage(
+        selectedMap.source === "built-in"
+          ? `Loaded test map "${selectedMap.name}".`
+          : `Loaded saved map "${selectedMap.name}".`
+      );
     } catch (error) {
       await renderSavedMapOptions();
       showStorageMessage(error.message);
@@ -209,12 +226,18 @@ async function bindEvents() {
 
   elements.deleteSavedMapButton.addEventListener("click", async () => {
     try {
-      const selectedName = elements.savedMapSelect.value;
+      const selectedMap = getSelectedSavedMap();
 
-      if (await mapStorage.remove(selectedName)) {
+      if (!selectedMap || selectedMap.source !== "server") {
+        showStorageMessage("Built-in test maps cannot be deleted.");
+        updateButtonState();
+        return;
+      }
+
+      if (await mapStorage.remove(selectedMap.name)) {
         await renderSavedMapOptions();
         elements.mapNameInput.value = "";
-        showStorageMessage(`Deleted saved map "${selectedName}".`);
+        showStorageMessage(`Deleted saved map "${selectedMap.name}".`);
       }
     } catch (error) {
       showStorageMessage(error.message);
@@ -224,8 +247,10 @@ async function bindEvents() {
   });
 
   elements.savedMapSelect.addEventListener("change", () => {
-    if (elements.savedMapSelect.value) {
-      elements.mapNameInput.value = elements.savedMapSelect.value;
+    const selectedMap = getSelectedSavedMap();
+
+    if (selectedMap) {
+      elements.mapNameInput.value = selectedMap.name;
     }
 
     updateButtonState();
@@ -343,38 +368,88 @@ async function bindEvents() {
 async function renderSavedMapOptions(selectedName = "") {
   elements.savedMapSelect.innerHTML = "";
 
-  let savedMaps;
+  const builtInMaps = listBuiltInSavedMaps();
+  let savedMaps = [];
+  let storageAvailable = true;
+  let storageError = "";
 
   try {
     savedMaps = await mapStorage.list();
   } catch (error) {
-    const unavailableOption = document.createElement("option");
-    unavailableOption.value = "";
-    unavailableOption.textContent = "Storage server unavailable";
-    elements.savedMapSelect.appendChild(unavailableOption);
-    elements.savedMapSelect.title = error.message;
-    return false;
+    storageAvailable = false;
+    storageError = error.message;
   }
 
-  elements.savedMapSelect.title = "";
+  elements.savedMapSelect.title = storageError;
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = savedMaps.length > 0 ? "Select a saved map" : "No saved maps";
+  placeholder.textContent = builtInMaps.length + savedMaps.length > 0
+    ? "Select a saved map"
+    : "No saved maps";
   elements.savedMapSelect.appendChild(placeholder);
 
-  savedMaps.forEach(({ name }) => {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    elements.savedMapSelect.appendChild(option);
-  });
+  appendSavedMapGroup("Test maps", "built-in", builtInMaps);
 
-  if (savedMaps.some(({ name }) => name === selectedName)) {
-    elements.savedMapSelect.value = selectedName;
+  if (storageAvailable) {
+    appendSavedMapGroup("Saved maps", "server", savedMaps);
   }
 
-  return true;
+  selectSavedMapOption(selectedName, storageAvailable ? "server" : "built-in");
+  return storageAvailable;
+}
+
+function appendSavedMapGroup(label, source, maps) {
+  if (maps.length === 0) {
+    return;
+  }
+
+  const group = document.createElement("optgroup");
+  group.label = label;
+
+  maps.forEach(({ name }) => {
+    const option = document.createElement("option");
+    option.value = `${source}:${encodeURIComponent(name)}`;
+    option.textContent = name;
+    option.dataset.source = source;
+    option.dataset.name = name;
+    group.appendChild(option);
+  });
+
+  elements.savedMapSelect.appendChild(group);
+}
+
+function selectSavedMapOption(name, preferredSource = "server") {
+  if (!name) {
+    return;
+  }
+
+  const options = Array.from(elements.savedMapSelect.options);
+  const preferredOption = options.find((option) =>
+    option.dataset.name === name && option.dataset.source === preferredSource
+  );
+  const fallbackOption = options.find((option) => option.dataset.name === name);
+
+  if (preferredOption || fallbackOption) {
+    elements.savedMapSelect.value = (preferredOption || fallbackOption).value;
+  }
+}
+
+function getSelectedSavedMap() {
+  const option = elements.savedMapSelect.selectedOptions[0];
+
+  if (!option?.dataset.source || !option.dataset.name) {
+    return null;
+  }
+
+  return {
+    source: option.dataset.source,
+    name: option.dataset.name,
+  };
+}
+
+function getSelectedSavedMapSource() {
+  return getSelectedSavedMap()?.source ?? "";
 }
 
 function showStorageMessage(message) {
@@ -660,7 +735,7 @@ async function init() {
   handleStateChange(environment.getState());
   updateInputsFromState(environment.getInitialState());
   if (!storageAvailable) {
-    showStorageMessage("Save/Load maps requires the project server. Run npm start and open http://localhost:3000.");
+    showStorageMessage("Storage server unavailable; built-in Test 1-10 maps are ready to load.");
   }
   updateButtonState();
 }
