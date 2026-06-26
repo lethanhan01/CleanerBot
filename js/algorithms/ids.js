@@ -29,7 +29,6 @@ export class IDSAlgorithm extends DFSAlgorithm {
       }
 
       const targetKey = this.positionKey(candidate.target);
-      this.cachePath(state, robot, candidate.target, candidate.route);
 
       if (this.hasEnoughBatteryForTarget(state, candidate.target)) {
         return candidate;
@@ -65,7 +64,8 @@ export class IDSAlgorithm extends DFSAlgorithm {
     const startKey = this.positionKey(start);
     const pathSet = new Set([startKey]);
     const bestDepthByNode = new Map([[startKey, 0]]);
-    const result = this.depthLimitedTraverse(
+
+    return this.depthLimitedTraverse(
       state,
       path,
       pathSet,
@@ -89,8 +89,6 @@ export class IDSAlgorithm extends DFSAlgorithm {
       null,
       bestDepthByNode
     );
-
-    return result;
   }
 
   findPath(state, start, goal, options = {}) {
@@ -107,19 +105,12 @@ export class IDSAlgorithm extends DFSAlgorithm {
       ? this.positionKey(options.avoidFirstStepToPosition)
       : null;
 
-    if (!avoidFirstStepKey) {
-      const cachedPath = this.getCachedPath(state, start, goal);
-
-      if (cachedPath !== undefined) {
-        return cachedPath;
-      }
-    }
-
     for (let depthLimit = 0; depthLimit <= maxDepth; depthLimit += 1) {
       const path = [{ x: start.x, y: start.y }];
       const startKey = this.positionKey(start);
       const pathSet = new Set([startKey]);
       const bestDepthByNode = new Map([[startKey, 0]]);
+
       const result = this.depthLimitedTraverse(
         state,
         path,
@@ -139,16 +130,8 @@ export class IDSAlgorithm extends DFSAlgorithm {
       );
 
       if (result) {
-        if (!avoidFirstStepKey) {
-          this.cachePath(state, start, goal, result);
-        }
-
         return result;
       }
-    }
-
-    if (!avoidFirstStepKey) {
-      this.cachePath(state, start, goal, null);
     }
 
     return null;
@@ -177,9 +160,9 @@ export class IDSAlgorithm extends DFSAlgorithm {
       return null;
     }
 
-    // IDS duyệt đệ quy (không dùng stack như DFS) nên KHÔNG được .reverse():
-    // vòng for mở rộng ứng viên đầu tiên trước, nên giữ nguyên thứ tự
-    // getMoveCandidates (lên - phải - xuống - trái) để khớp với DFS.
+    // IDS uses recursion, not stack/LIFO, so do NOT reverse candidates.
+    // DFSAlgorithm.getMoveCandidates() already returns:
+    // UP -> RIGHT -> DOWN -> LEFT.
     const candidates = this.getMoveCandidates(current);
 
     for (const candidate of candidates) {
@@ -200,7 +183,7 @@ export class IDSAlgorithm extends DFSAlgorithm {
       }
 
       bestDepthByNode.set(key, nextDepth);
-      path.push(candidate.position);
+      path.push({ x: candidate.position.x, y: candidate.position.y });
       pathSet.add(key);
       this.recordMemoryUsage(path.length + bestDepthByNode.size);
 
