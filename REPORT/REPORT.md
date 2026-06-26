@@ -27,6 +27,7 @@
     - [6.2. Quy Trình Chạy So Sánh](#62-quy-trình-chạy-so-sánh)
     - [6.3. Kết Quả So Sánh](#63-kết-quả-so-sánh)
     - [6.4. Nhận Xét Và Phân Tích](#64-nhận-xét-và-phân-tích)
+    - [6.5. Bảng Ưu Nhược Điểm](#65-bảng-ưu-nhược-điểm)
   - [7. Xây Dựng Hệ Thống](#7-xây-dựng-hệ-thống)
     - [7.1. Cấu Trúc Tổng Thể](#71-cấu-trúc-tổng-thể)
     - [7.2. Lớp Dữ Liệu Cốt Lõi](#72-lớp-dữ-liệu-cốt-lõi)
@@ -584,72 +585,237 @@ THUẬT TOÁN CHỌN_MỤC_TIÊU_GREEDY(trạng_thái):
 
 ### 6.1. Đầu Vào Test So Sánh
 
-Sử dụng bản đồ demo cố định để đảm bảo các thuật toán được so sánh công bằng trên cùng một trạng thái ban đầu.
+Để so sánh công bằng và có khả năng lặp lại, project dùng 10 bản đồ cố định có sẵn trong nhóm **Test maps** của mục Saved Maps. Mỗi thuật toán được chạy từ cùng một trạng thái ban đầu của từng map, trên một `Environment` độc lập, không dùng lại trạng thái hoặc metric của thuật toán khác.
 
-| Thành phần | Giá trị |
-| --- | --- |
-| Kích thước bản đồ | 10 × 10 |
-| Vị trí robot ban đầu | A1 (góc trên trái) |
-| Trạm sạc | A1 |
-| Thùng rác | J10 (góc dưới phải) |
-| Pin tối đa | 100 |
-| Hao pin mỗi bước | 1 |
-| Sức chứa rác tối đa | 3 |
-| Vị trí rác | A5, E1, J1, J5, E10, J10 |
-| Vị trí chướng ngại vật | B2, C2, D2, F2, G2, H2, I2, D3, F3, I3, B4, D4, F4, G4, I4, B5, D5, G5, I5, B6, D6, F6, G6, I6, B7, F7, I7, B8, C8, D8, F8, H8, I8, D9, F9 |
+| Map | Kích thước | Số rác | Số chướng ngại | Sức chứa | Đặc điểm chính |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Test 1 | 8x8 | 4 | 0 | 3 | Bản đồ mở, không có vật cản |
+| Test 2 | 8x8 | 4 | 7 | 3 | Vật cản thưa, kiểm tra né tường cơ bản |
+| Test 3 | 10x10 | 6 | 22 | 3 | Dạng hành lang, nhiều đường vòng |
+| Test 4 | 10x10 | 6 | 26 | 4 | Các vách ngăn dạng phòng |
+| Test 5 | 12x8 | 6 | 22 | 4 | Bản đồ rộng ngang |
+| Test 6 | 8x12 | 6 | 19 | 4 | Bản đồ cao dọc |
+| Test 7 | 12x12 | 7 | 34 | 5 | Bản đồ lớn và dày vật cản nhất |
+| Test 8 | 6x6 | 4 | 6 | 2 | Bản đồ nhỏ, sức chứa thấp |
+| Test 9 | 10x8 | 6 | 17 | 3 | Nhiều nhánh tách tuyến |
+| Test 10 | 10x10 | 6 | 35 | 3 | Bản đồ demo so sánh thuật toán ban đầu |
+
+Các vị trí rác, chướng ngại, trạm sạc và thùng rác được định nghĩa cố định trong `js/sampleMaps.js`. Tất cả 10 map đã được kiểm tra tự động để đảm bảo: không có rác nằm trên tường/trạm/thùng, các mục tiêu đều nằm trong lưới, và mọi rác/thùng rác đều đi tới được từ vị trí xuất phát.
 
 ### 6.2. Quy Trình Chạy So Sánh
 
-1. Khởi động server bằng lệnh `npm start`.
-2. Mở trình duyệt tại `http://localhost:3000`.
-3. Bấm **Load demo** để nạp bản đồ 10×10 cố định.
-4. Bấm **Compare 7 algorithms** để mở panel so sánh.
-5. Bấm **Final** để các thuật toán chạy nhanh đến trạng thái cuối hoặc đến giới hạn 2000 bước.
-6. Ghi lại các chỉ số hiển thị trong từng card thuật toán.
+Quy trình so sánh được thiết kế để mọi thuật toán nhận cùng một đầu vào và được đo theo cùng một cách. Với mỗi bản đồ Test 1 đến Test 10, hệ thống nạp lại trạng thái ban đầu sạch: robot quay về vị trí xuất phát, pin đầy, túi rác rỗng, danh sách rác và chướng ngại vật đúng như map gốc.
 
-Trong quá trình chạy, mỗi thuật toán nhận cùng một bản đồ ban đầu nhưng chạy trên một môi trường độc lập. Vì vậy kết quả so sánh phản ánh đúng khác biệt trong chiến lược tìm kiếm của từng thuật toán.
+Sau đó, từng thuật toán được chạy riêng trên một môi trường độc lập. Việc tách môi trường là cần thiết vì trong quá trình chạy, robot sẽ di chuyển, hút rác, đổ rác, sạc pin và làm thay đổi trạng thái bản đồ. Nếu các thuật toán dùng chung một môi trường, thuật toán chạy sau sẽ không còn nhận đúng đầu vào ban đầu nữa.
+
+Trong mỗi lượt chạy, thuật toán chỉ có nhiệm vụ trả về hành động kế tiếp cho robot. Môi trường sẽ kiểm tra hành động đó có hợp lệ hay không, cập nhật vị trí, pin, túi rác, số bước và trạng thái hoàn thành. Vòng lặp tiếp tục cho đến khi robot dọn hết rác, đổ hết rác đang mang và quay về trạm sạc; khi đó trạng thái được ghi là **Done**.
+
+Để tránh trường hợp một thuật toán bị kẹt làm quá trình đo không kết thúc, mỗi lượt chạy có giới hạn tối đa 2000 lần hỏi hành động. Nếu vượt giới hạn này mà robot chưa hoàn thành nhiệm vụ, kết quả được ghi là **Stopped**. Trường hợp này xuất hiện ở DFS trên Test 7, nên báo cáo giữ nguyên kết quả đó thay vì loại bỏ hoặc chỉnh sửa số liệu.
+
+Các chỉ số được ghi lại gồm:
+
+| Chỉ số | Ý nghĩa |
+| --- | --- |
+| Status | Thuật toán hoàn thành nhiệm vụ (**Done**) hay bị dừng do chạm giới hạn (**Stopped**) |
+| Steps | Số hành động hợp lệ thật sự làm tăng bước trong môi trường |
+| Actions | Số lần thuật toán được hỏi hành động; có thể lớn hơn Steps nếu có hành động không hợp lệ hoặc không tạo tiến triển |
+| Visited nodes | Tổng số node/ô mà thuật toán đã duyệt trong quá trình tìm đường, cộng dồn qua cả lượt chạy |
+| Runtime ms avg | Thời gian xử lý trung bình của thuật toán, đo nhiều lần để giảm nhiễu do CPU |
+| Battery used | Tổng lượng pin robot đã tiêu thụ trong lượt chạy |
+| Memory | Đỉnh bộ nhớ ước lượng theo số node được thuật toán giữ đồng thời |
+| Rác còn lại | Số rác chưa được xử lý khi kết thúc lượt chạy |
+| Pin cuối | Lượng pin còn lại của robot ở trạng thái cuối |
+
+Các chỉ số như Status, Steps, Actions, Visited nodes, Battery used và Memory ổn định theo logic thuật toán. Riêng Runtime phụ thuộc vào tải máy khi chạy, vì vậy chỉ nên dùng để so sánh tương đối trong cùng một lần đo.
 
 ### 6.3. Kết Quả So Sánh
 
-Kết quả được thu thập bằng cách chạy từng thuật toán trên bản đồ demo 10×10, mỗi thuật toán có một môi trường độc lập, giới hạn tối đa 2000 bước.
+#### Test 1
 
-| Thuật toán | Status | Steps | Visited nodes | Runtime ms | Battery used | Memory (nodes) |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| BFS | Done | 72 | 863 | 6,29 | 72 | 68 |
-| DFS | Done | 177 | 1734 | 7,65 | 176 | 72 |
-| IDS | Done | 72 | 14204 | 17,39 | 72 | 82 |
-| A\* | Done | 72 | 875 | 7,03 | 72 | 36 |
-| IDA\* | Done | 72 | 980 | 4,49 | 72 | 52 |
-| Dijkstra | Done | 72 | 863 | 3,44 | 72 | 65 |
-| Greedy | Done | 75 | 75 | 17,05 | 75 | 1 |
+Map: 8x8, 4 rác, 0 chướng ngại, sức chứa 3.
 
-> **Ghi chú chỉ số:**
-> - **Steps:** tổng số hành động robot thực hiện (di chuyển + hút rác + đổ rác + sạc pin).
-> - **Visited nodes:** tổng số lần một ô được lấy ra khỏi hàng đợi/ngăn xếp trong quá trình tìm đường (cộng dồn qua toàn bộ các lần gọi tìm đường).
-> - **Runtime ms:** tổng thời gian CPU mà thuật toán dùng để tính toán (không tính thời gian environment thực thi).
-> - **Battery used:** tổng pin tiêu thụ thực tế (bằng steps vì hao pin = 1/bước trong bản đồ này).
-> - **Memory:** đỉnh bộ nhớ ước lượng theo số node đang giữ đồng thời trong bộ nhớ tại bất kỳ thời điểm nào.
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 40 | 40 | 504 | 2,01 | 40,0 | 66 | 0 | 60,0 |
+| DFS | Done | 167 | 167 | 1237 | 3,25 | 166,0 | 93 | 0 | 28,0 |
+| IDS | Done | 40 | 40 | 11148 | 5,88 | 40,0 | 76 | 0 | 60,0 |
+| A* | Done | 40 | 40 | 222 | 2,01 | 40,0 | 29 | 0 | 60,0 |
+| IDA* | Done | 40 | 40 | 222 | 0,86 | 40,0 | 30 | 0 | 60,0 |
+| Dijkstra | Done | 40 | 40 | 504 | 1,29 | 40,0 | 64 | 0 | 60,0 |
+| Greedy | Done | 54 | 54 | 54 | 7,32 | 54,0 | 1 | 0 | 46,0 |
+
+#### Test 2
+
+Map: 8x8, 4 rác, 7 chướng ngại, sức chứa 3.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 56 | 56 | 627 | 1,45 | 56,0 | 61 | 0 | 44,0 |
+| DFS | Done | 149 | 149 | 1402 | 3,03 | 148,0 | 78 | 0 | 52,0 |
+| IDS | Done | 56 | 56 | 8587 | 5,14 | 56,0 | 69 | 0 | 44,0 |
+| A* | Done | 56 | 56 | 431 | 2,05 | 56,0 | 25 | 0 | 44,0 |
+| IDA* | Done | 56 | 56 | 482 | 1,47 | 56,0 | 30 | 0 | 44,0 |
+| Dijkstra | Done | 56 | 56 | 627 | 1,16 | 56,0 | 59 | 0 | 44,0 |
+| Greedy | Done | 86 | 86 | 86 | 9,18 | 86,0 | 1 | 0 | 14,0 |
+
+#### Test 3
+
+Map: 10x10, 6 rác, 22 chướng ngại, sức chứa 3.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 82 | 82 | 1392 | 2,56 | 82,0 | 83 | 0 | 18,0 |
+| DFS | Done | 250 | 250 | 2779 | 4,85 | 248,0 | 111 | 0 | 4,0 |
+| IDS | Done | 82 | 82 | 25062 | 12,80 | 82,0 | 95 | 0 | 18,0 |
+| A* | Done | 86 | 86 | 1418 | 6,06 | 86,0 | 55 | 0 | 14,0 |
+| IDA* | Done | 86 | 86 | 2116 | 4,55 | 86,0 | 63 | 0 | 14,0 |
+| Dijkstra | Done | 82 | 82 | 1392 | 2,68 | 82,0 | 78 | 0 | 18,0 |
+| Greedy | Done | 129 | 129 | 129 | 22,31 | 128,0 | 1 | 0 | 49,0 |
+
+#### Test 4
+
+Map: 10x10, 6 rác, 26 chướng ngại, sức chứa 4.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 78 | 78 | 1053 | 1,42 | 78,0 | 74 | 0 | 22,0 |
+| DFS | Done | 177 | 177 | 1778 | 1,97 | 176,0 | 89 | 0 | 21,0 |
+| IDS | Done | 78 | 78 | 31350 | 14,22 | 78,0 | 95 | 0 | 22,0 |
+| A* | Done | 78 | 78 | 2487 | 5,61 | 78,0 | 67 | 0 | 22,0 |
+| IDA* | Done | 78 | 78 | 7730 | 6,04 | 78,0 | 81 | 0 | 22,0 |
+| Dijkstra | Done | 78 | 78 | 1053 | 1,68 | 78,0 | 71 | 0 | 22,0 |
+| Greedy | Done | 100 | 100 | 100 | 16,80 | 100,0 | 1 | 0 | 0,0 |
+
+#### Test 5
+
+Map: 12x8, 6 rác, 22 chướng ngại, sức chứa 4.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 82 | 82 | 1348 | 1,57 | 82,0 | 78 | 0 | 18,0 |
+| DFS | Done | 236 | 236 | 2133 | 2,16 | 234,0 | 93 | 0 | 43,0 |
+| IDS | Done | 82 | 82 | 18180 | 7,88 | 82,0 | 90 | 0 | 18,0 |
+| A* | Done | 82 | 82 | 1101 | 2,82 | 82,0 | 31 | 0 | 18,0 |
+| IDA* | Done | 82 | 82 | 1178 | 1,67 | 82,0 | 40 | 0 | 18,0 |
+| Dijkstra | Done | 82 | 82 | 1348 | 1,76 | 82,0 | 74 | 0 | 18,0 |
+| Greedy | Done | 88 | 88 | 88 | 12,25 | 88,0 | 1 | 0 | 12,0 |
+
+#### Test 6
+
+Map: 8x12, 6 rác, 19 chướng ngại, sức chứa 4.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 68 | 68 | 858 | 0,86 | 68,0 | 82 | 0 | 32,0 |
+| DFS | Done | 248 | 248 | 3314 | 2,85 | 246,0 | 103 | 0 | 28,0 |
+| IDS | Done | 68 | 68 | 14873 | 6,39 | 68,0 | 91 | 0 | 32,0 |
+| A* | Done | 68 | 68 | 1373 | 3,49 | 68,0 | 62 | 0 | 32,0 |
+| IDA* | Done | 68 | 68 | 2648 | 2,44 | 68,0 | 76 | 0 | 32,0 |
+| Dijkstra | Done | 68 | 68 | 858 | 1,16 | 68,0 | 76 | 0 | 32,0 |
+| Greedy | Done | 76 | 76 | 76 | 9,21 | 76,0 | 1 | 0 | 24,0 |
+
+#### Test 7
+
+Map: 12x12, 7 rác, 34 chướng ngại, sức chứa 5.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 85 | 85 | 1411 | 1,64 | 85,0 | 112 | 0 | 15,0 |
+| DFS | Stopped | 180 | 2000 | 1068594 | 719,15 | 178,0 | 137 | 3 | 100,0 |
+| IDS | Done | 85 | 85 | 28516 | 20,06 | 85,0 | 130 | 0 | 15,0 |
+| A* | Done | 85 | 85 | 2463 | 9,42 | 85,0 | 88 | 0 | 15,0 |
+| IDA* | Done | 85 | 85 | 3378 | 6,27 | 85,0 | 96 | 0 | 15,0 |
+| Dijkstra | Done | 85 | 85 | 1411 | 2,67 | 85,0 | 110 | 0 | 15,0 |
+| Greedy | Done | 172 | 172 | 172 | 58,88 | 171,0 | 1 | 0 | 11,0 |
+
+#### Test 8
+
+Map: 6x6, 4 rác, 6 chướng ngại, sức chứa 2.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 42 | 42 | 337 | 0,44 | 42,0 | 36 | 0 | 58,0 |
+| DFS | Done | 76 | 76 | 575 | 0,73 | 76,0 | 39 | 0 | 24,0 |
+| IDS | Done | 42 | 42 | 3499 | 1,80 | 42,0 | 39 | 0 | 58,0 |
+| A* | Done | 42 | 42 | 255 | 0,71 | 42,0 | 23 | 0 | 58,0 |
+| IDA* | Done | 42 | 42 | 270 | 0,51 | 42,0 | 26 | 0 | 58,0 |
+| Dijkstra | Done | 42 | 42 | 337 | 0,69 | 42,0 | 36 | 0 | 58,0 |
+| Greedy | Done | 58 | 58 | 58 | 4,17 | 58,0 | 1 | 0 | 42,0 |
+
+#### Test 9
+
+Map: 10x8, 6 rác, 17 chướng ngại, sức chứa 3.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 90 | 90 | 1891 | 2,31 | 90,0 | 67 | 0 | 10,0 |
+| DFS | Done | 159 | 159 | 1633 | 2,11 | 158,0 | 83 | 0 | 32,0 |
+| IDS | Done | 90 | 90 | 20201 | 11,43 | 90,0 | 78 | 0 | 10,0 |
+| A* | Done | 92 | 92 | 1776 | 5,42 | 92,0 | 51 | 0 | 8,0 |
+| IDA* | Done | 90 | 90 | 4849 | 5,36 | 90,0 | 51 | 0 | 10,0 |
+| Dijkstra | Done | 90 | 90 | 1891 | 2,57 | 90,0 | 67 | 0 | 10,0 |
+| Greedy | Done | 175 | 175 | 175 | 29,65 | 174,0 | 1 | 0 | 4,0 |
+
+#### Test 10
+
+Map: 10x10, 6 rác, 35 chướng ngại, sức chứa 3.
+
+| Thuật toán | Status | Steps | Actions | Visited nodes | Runtime ms avg | Battery used | Memory | Rác còn lại | Pin cuối |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| BFS | Done | 72 | 72 | 927 | 1,59 | 72,0 | 68 | 0 | 28,0 |
+| DFS | Done | 236 | 236 | 2224 | 3,78 | 234,0 | 72 | 0 | 4,0 |
+| IDS | Done | 72 | 72 | 14850 | 9,63 | 72,0 | 82 | 0 | 28,0 |
+| A* | Done | 72 | 72 | 948 | 3,58 | 72,0 | 36 | 0 | 28,0 |
+| IDA* | Done | 72 | 72 | 1091 | 2,38 | 72,0 | 52 | 0 | 28,0 |
+| Dijkstra | Done | 72 | 72 | 927 | 1,93 | 72,0 | 65 | 0 | 28,0 |
+| Greedy | Done | 74 | 74 | 74 | 11,08 | 74,0 | 1 | 0 | 26,0 |
+
+#### Bảng Tóm Tắt Theo Map
+
+| Map | Steps tốt nhất | Thuật toán đạt steps tốt nhất | Ít node duyệt nhất | Runtime thấp nhất | Memory thấp nhất |
+| --- | ---: | --- | --- | --- | --- |
+| Test 1 | 40 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (54) | IDA* (0,86 ms) | Greedy (1) |
+| Test 2 | 56 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (86) | Dijkstra (1,16 ms) | Greedy (1) |
+| Test 3 | 82 | BFS, IDS, Dijkstra | Greedy (129) | BFS (2,56 ms) | Greedy (1) |
+| Test 4 | 78 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (100) | BFS (1,42 ms) | Greedy (1) |
+| Test 5 | 82 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (88) | BFS (1,57 ms) | Greedy (1) |
+| Test 6 | 68 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (76) | BFS (0,86 ms) | Greedy (1) |
+| Test 7 | 85 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (172) | BFS (1,64 ms) | Greedy (1) |
+| Test 8 | 42 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (58) | BFS (0,44 ms) | Greedy (1) |
+| Test 9 | 90 | BFS, IDS, IDA*, Dijkstra | Greedy (175) | DFS (2,11 ms) | Greedy (1) |
+| Test 10 | 72 | BFS, IDS, A*, IDA*, Dijkstra | Greedy (74) | BFS (1,59 ms) | Greedy (1) |
 
 ### 6.4. Nhận Xét Và Phân Tích
 
-**Về khả năng hoàn thành:** Tất cả 7 thuật toán đều hoàn thành nhiệm vụ (trạng thái Done) trên bản đồ 10×10 này. Không có thuật toán nào bị dừng sớm do hết pin hay vượt giới hạn bước.
+**Về khả năng hoàn thành:** Trong 70 lượt chạy chính (10 map x 7 thuật toán), có 69 lượt hoàn thành nhiệm vụ. Trường hợp không hoàn thành là DFS trên Test 7: sau 2000 action, robot mới thực hiện được 180 steps hợp lệ, còn 3 rác chưa xử lý. Đây là kết quả hợp lý với bản chất DFS: khi map lớn, nhiều nhánh và có committed route, thuật toán có thể bị kéo vào các đường đi rất kém hiệu quả hoặc lặp lại quyết định không tạo tiến triển.
 
-**Về số bước và năng lượng:** BFS, IDS, A\*, IDA\* và Dijkstra đều đạt **72 bước** — đây là số bước tối thiểu để hoàn thành nhiệm vụ trên bản đồ này. Greedy chênh lệch nhỏ với **75 bước** do một vài quyết định cục bộ không hoàn toàn tối ưu. DFS là thuật toán kém hiệu quả nhất về hành trình với **177 bước** — gấp 2,5 lần so với các thuật toán tối ưu — vì DFS không đảm bảo đường ngắn nhất và thường đi vòng trước khi tìm đúng hướng.
+**Về số bước:** BFS, IDS và Dijkstra luôn đạt số steps tốt nhất trên cả 10 map. Điều này phù hợp với lý thuyết vì môi trường hiện tại có chi phí di chuyển đồng nhất, nên BFS và Dijkstra tìm đường ngắn nhất như nhau, còn IDS tìm được lời giải nông nhất. A* và IDA* đa số cũng đạt steps tốt nhất, nhưng không tuyệt đối: trên Test 3, A* và IDA* cần 86 steps trong khi nhóm tối ưu cần 82; trên Test 9, A* cần 92 steps trong khi BFS/IDS/IDA*/Dijkstra cần 90. Nguyên nhân là bài toán không chỉ là một lần tìm đường từ A đến B, mà gồm chuỗi quyết định chọn rác, đổ rác, sạc pin và kiểm tra an toàn pin.
 
-**Về số node đã duyệt:** Kết quả có sự phân hóa rõ rệt. **Greedy** duyệt ít nhất với chỉ **75 node** — bằng đúng số bước — vì Greedy không tìm đường trọn vẹn mà chỉ chấm điểm 4 ô kề tại mỗi bước. **BFS và Dijkstra** ngang nhau ở **863 node**, phản ánh bản chất duyệt theo lớp đồng nhất của hai thuật toán này. **A\*** duyệt **875 node**, nhỉnh hơn BFS một chút — trên bản đồ nhỏ này heuristic Manhattan chưa tạo ra lợi thế rõ ràng vì không gian tìm kiếm không đủ lớn. **DFS** duyệt **1734 node** do tìm đường không tối ưu nên phải tính lại nhiều lần. **IDA\*** duyệt **980 node** — nhiều hơn A\* vì phải lặp lại các vòng với ngưỡng tăng dần. **IDS** là thuật toán duyệt nhiều nhất với **14.204 node** — hệ quả tất yếu của việc lặp lại toàn bộ DFS từ độ sâu 0 mỗi vòng; chi phí này đánh đổi lấy bộ nhớ rất thấp.
+**Về DFS:** DFS hoàn thành 9/10 map nhưng thường dùng nhiều bước hơn đáng kể. Ví dụ Test 3 cần 250 steps so với 82 của BFS, Test 6 cần 248 steps so với 68, Test 10 cần 236 steps so với 72. DFS vì vậy minh họa rõ đánh đổi giữa chiến lược tìm sâu và chất lượng hành trình: có thể tìm được lời giải, nhưng không đảm bảo ngắn, và trên bản đồ lớn Test 7 còn không hoàn thành trong giới hạn.
 
-**Về thời gian chạy:** **Dijkstra** chạy nhanh nhất (**3,44 ms**) nhờ logic đơn giản và không có overhead heuristic. **IDA\*** cũng nhanh (**4,49 ms**) vì tìm đường đệ quy gọn nhẹ. **BFS** và **A\*** ở mức trung bình (6–7 ms). **IDS** và **Greedy** có runtime cao nhất (~17 ms) — IDS do số node duyệt lớn, Greedy do mỗi bước gọi BFS nội bộ để tính khoảng cách kiểm tra pin an toàn. Runtime chịu ảnh hưởng của môi trường chạy nên chỉ nên dùng làm chỉ số tương đối.
+**Về Greedy:** Greedy hoàn thành cả 10 map và luôn có số visited nodes thấp nhất, đúng bằng số action đã chạy, vì thuật toán không mở rộng toàn bộ frontier như BFS/A*/Dijkstra mà chỉ chấm điểm bước kế tiếp. Memory của Greedy luôn là 1 node. Tuy nhiên, Greedy trả giá bằng hành trình dài hơn: Test 7 cần 172 steps so với mức tốt nhất 85, Test 9 cần 175 steps so với 90. Trên Test 4, Greedy hoàn thành nhưng pin cuối bằng 0, cho thấy chiến lược tham lam có thể đi sát giới hạn an toàn hơn các thuật toán tìm đường đầy đủ.
 
-**Về bộ nhớ:** **Greedy** dùng ít bộ nhớ nhất (**1 node**) vì không lưu open set hay đường đi — mỗi bước chỉ xét 4 ô kề. **A\*** dùng **36 node** — ít hơn BFS (68) và Dijkstra (65) nhờ heuristic thu hẹp frontier. **IDA\*** dùng **52 node** — nhiều hơn A\* một chút dù về lý thuyết IDA\* tiết kiệm bộ nhớ hơn; sự chênh lệch này đến từ cách đo peak memory trong project (đếm đồng thời path + bestDepthByNode). **IDS** dùng nhiều nhất trong nhóm không có heuristic (**82 node**), nhỉnh hơn BFS do lưu thêm cấu trúc theo dõi độ sâu.
+**Về visited nodes:** IDS có chi phí duyệt node rất cao do lặp lại DFS với giới hạn độ sâu tăng dần: Test 4 duyệt 31.350 node, Test 7 duyệt 28.516 node. DFS trên Test 7 là ngoại lệ lớn nhất với 1.068.594 node do không hoàn thành và tiếp tục bị hỏi hành động đến giới hạn 2000 action. BFS và Dijkstra có số node giống nhau trên mọi map vì mỗi bước di chuyển có chi phí 1, làm Dijkstra suy biến gần với BFS trong bài toán không trọng số.
 
-**Nhận xét tổng hợp:**
+**Về runtime:** Runtime chỉ nên xem là chỉ số tương đối vì phụ thuộc máy chạy Node.js. Trong lần đo này, BFS thường nhanh nhất hoặc gần nhanh nhất ở 7/10 map; Dijkstra nhanh nhất ở Test 2; IDA* nhanh nhất ở Test 1; DFS nhanh nhất ở Test 9 dù số steps không tốt nhất. Greedy tuy duyệt ít node nhưng runtime không thấp nhất, vì mỗi bước còn có các kiểm tra an toàn và tính toán phụ trợ để tránh hết pin hoặc quay lui xấu.
 
-Trên bản đồ 10×10 với chi phí đồng nhất này, **BFS, Dijkstra, A\*, IDA\* và IDS** đều tìm được đường tối ưu 72 bước, xác nhận tính đúng đắn về lý thuyết. **DFS** minh họa rõ nhất sự đánh đổi: bộ nhớ thấp hơn (chỉ lưu nhánh hiện tại) nhưng hành trình dài hơn đáng kể. **IDS** giải quyết nhược điểm của DFS — tìm được đường tối ưu như BFS — nhưng trả giá bằng số node duyệt lớn gấp 16 lần BFS.
+**Về bộ nhớ:** Greedy thấp nhất tuyệt đối với peak memory 1 node. Trong nhóm tìm đường đầy đủ, A* thường dùng ít memory hơn BFS/Dijkstra nhờ heuristic Manhattan thu hẹp hướng tìm kiếm, ví dụ Test 5 A* dùng 31 node so với BFS 78 và Dijkstra 74. IDA* thường nằm giữa A* và BFS/Dijkstra trong cách đo hiện tại của project, vì metric đang tính cả đường đệ quy và bảng độ sâu tốt nhất đã ghi nhận.
 
-Điểm thú vị là **A\* không vượt trội rõ ràng hơn BFS** trên bản đồ này: số node duyệt gần tương đương (875 so với 863). Điều này phù hợp với lý thuyết — heuristic Manhattan chỉ phát huy mạnh khi không gian tìm kiếm lớn và có nhiều hướng để cắt tỉa. **Greedy** thể hiện rõ bản chất tham lam: duyệt cực ít node (75) và hành trình chỉ chênh 3 bước so với tối ưu — trên bản đồ này penalty thăm lại và penalty quay lui đã đủ để dẫn hướng tốt, dù không đảm bảo tối ưu về mặt lý thuyết.
+**Kết luận so sánh:** Nếu ưu tiên lời giải ổn định, ngắn và dễ giải thích, BFS hoặc Dijkstra là lựa chọn tốt nhất trong môi trường chi phí đồng nhất hiện tại. IDS cho cùng chất lượng đường đi nhưng tốn visited nodes lớn hơn nhiều. A* và IDA* có lợi thế rõ về bộ nhớ trong nhiều map, nhưng do bài toán gồm nhiều mục tiêu tuần tự nên không phải lúc nào cũng cho tổng steps thấp nhất. Greedy rất nhẹ về memory và visited nodes, hoàn thành được tất cả test, nhưng không đảm bảo tối ưu và có thể dùng nhiều pin hơn. DFS phù hợp để minh họa chiến lược tìm sâu, nhưng là lựa chọn kém ổn định nhất cho bài toán robot dọn rác có nhiều mục tiêu.
+
+### 6.5. Bảng Ưu Nhược Điểm
+
+| Thuật toán | Ưu điểm thực tế | Nhược điểm / rủi ro | Kết quả thể hiện qua 10 test | Khi nên dùng |
+| --- | --- | --- | --- | --- |
+| BFS | Dễ hiểu, dễ kiểm chứng và rất ổn định trên bản đồ không trọng số. Luôn tìm được đường ngắn nhất theo số bước từ vị trí hiện tại đến mục tiêu. Trong bài toán này, BFS cũng cho tổng hành trình tốt vì các bước di chuyển đều có chi phí bằng nhau. | Tốn bộ nhớ hơn các thuật toán đi sâu vì phải giữ frontier theo từng lớp. Khi bản đồ lớn và thoáng, số node cần duyệt có thể tăng nhanh. BFS cũng không tận dụng thông tin mục tiêu ở hướng nào, nên vẫn có thể duyệt nhiều vùng không cần thiết. | Hoàn thành cả 10/10 map. Luôn nằm trong nhóm có Steps tốt nhất. Số node duyệt bằng Dijkstra trên mọi map vì chi phí di chuyển đồng nhất. Runtime thường thấp hoặc gần thấp nhất trong lần đo này. | Phù hợp nhất khi bản đồ không trọng số, cần kết quả ổn định, dễ giải thích và ưu tiên đường đi ngắn. Nên dùng làm thuật toán chuẩn để đối chiếu các thuật toán khác. |
+| DFS | Cài đặt đơn giản, dùng ý tưởng tìm sâu trực quan. Bộ nhớ lý thuyết có thể thấp vì không cần giữ toàn bộ frontier theo lớp. Có ích để minh họa sự khác biệt giữa chiến lược tìm sâu và tìm rộng. | Không đảm bảo đường ngắn nhất, dễ đi vòng trên bản đồ nhiều nhánh. Với bài toán nhiều mục tiêu, DFS có thể tạo hành trình rất dài. Nếu thứ tự duyệt không thuận lợi, thuật toán có thể bị kẹt trong các nhánh kém hiệu quả và liên tục tạo hành động không tiến triển. | Hoàn thành 9/10 map nhưng thường cần nhiều Steps hơn rõ rệt: Test 3 cần 250 Steps so với 82 của BFS, Test 6 cần 248 so với 68. Trên Test 7, DFS bị Stopped sau 2000 Actions, còn 3 rác chưa xử lý. | Phù hợp để học và minh họa thuật toán tìm kiếm, hoặc khi chỉ cần tìm một lời giải bất kỳ trong không gian nhỏ. Không nên chọn làm thuật toán chính cho robot dọn rác nếu cần ổn định, tối ưu bước đi hoặc đảm bảo hoàn thành trên bản đồ phức tạp. |
+| IDS | Kết hợp ưu điểm của DFS và BFS: tìm theo độ sâu tăng dần nên vẫn tìm được lời giải nông nhất như BFS trong bài toán không trọng số, đồng thời không cần giữ frontier lớn như BFS. Kết quả Steps rất ổn định. | Chi phí thời gian và số node duyệt cao vì các tầng độ sâu thấp bị duyệt lại nhiều lần. Khi mục tiêu xa hoặc bản đồ nhiều vật cản, số Visited nodes tăng mạnh. Việc lặp lại tìm kiếm khiến IDS không hiệu quả nếu chỉ nhìn vào tổng số node duyệt. | Hoàn thành cả 10/10 map và luôn đạt Steps tốt nhất. Tuy nhiên Visited nodes rất lớn: Test 4 duyệt 31.350 node, Test 7 duyệt 28.516 node, cao hơn nhiều so với BFS/Dijkstra. | Nên dùng khi muốn đảm bảo đường ngắn như BFS nhưng muốn trình bày một phương án tiết kiệm frontier hơn về mặt lý thuyết. Không phù hợp khi tiêu chí quan trọng là giảm số node duyệt hoặc giảm thời gian xử lý trên map lớn. |
+| Dijkstra | Tổng quát hơn BFS vì hỗ trợ bài toán có trọng số không âm. Trong môi trường hiện tại, mọi bước có chi phí như nhau nên Dijkstra cho kết quả đường đi tương đương BFS. Thuật toán ổn định, dễ giải thích theo chi phí tích lũy thấp nhất. | Với bản đồ không trọng số, Dijkstra chưa thể hiện hết lợi thế so với BFS nhưng vẫn có overhead quản lý chi phí/open set. Nếu cấu trúc hàng đợi ưu tiên chưa tối ưu, hiệu năng có thể kém hơn khi mở rộng bản đồ lớn. | Hoàn thành cả 10/10 map. Steps và Visited nodes trùng BFS trên tất cả map. Runtime thường rất tốt, có map nhanh nhất hoặc gần nhanh nhất. | Nên dùng nếu sau này bản đồ có trọng số khác nhau, ví dụ ô trơn, ô khó đi, vùng tốn pin hơn. Với bản đồ đồng nhất hiện tại, Dijkstra là lựa chọn ổn định nhưng chưa khác biệt nhiều so với BFS. |
+| A* | Dùng heuristic Manhattan để hướng tìm kiếm về phía mục tiêu, thường giảm bộ nhớ so với BFS/Dijkstra. Khi heuristic phù hợp, A* có thể tìm đường nhanh hơn vì không mở rộng đều ra mọi hướng. Kết quả dễ giải thích bằng công thức `f(n) = g(n) + h(n)`. | Hiệu quả phụ thuộc heuristic và cách chọn mục tiêu. Trong bài toán nhiều mục tiêu tuần tự, A* có thể tìm đường tốt đến mục tiêu đã chọn nhưng tổng hành trình chưa chắc tốt nhất nếu thứ tự mục tiêu không tối ưu. Trên bản đồ nhiều tường, heuristic Manhattan có thể đánh giá lạc quan quá mức. | Hoàn thành cả 10/10 map. Thường đạt Steps tốt nhất, nhưng Test 3 cần 86 Steps so với 82 của BFS/Dijkstra, Test 9 cần 92 so với 90. Memory thường thấp hơn BFS/Dijkstra, ví dụ Test 5 A* dùng 31 node so với BFS 78. | Nên dùng khi bản đồ lớn và có mục tiêu rõ ràng, đặc biệt khi muốn giảm frontier so với BFS. Cần cẩn thận nếu bài toán không chỉ là tìm đường đơn lẻ mà còn phải quyết định thứ tự nhiều mục tiêu. |
+| IDA* | Kết hợp heuristic của A* với tìm kiếm theo ngưỡng, giúp tránh phải giữ toàn bộ open set lớn. Có thể đạt đường đi tốt với bộ nhớ thấp hơn nhóm duyệt rộng trong nhiều trường hợp. Phù hợp để trình bày sự đánh đổi giữa A* và IDS. | Phải lặp lại tìm kiếm theo các ngưỡng `f`, nên có thể duyệt lại nhiều node. Trong cách đo hiện tại, memory không phải lúc nào thấp hơn A* vì còn tính đường đệ quy và cấu trúc ghi nhận độ sâu tốt nhất. Cũng chịu ảnh hưởng của thứ tự chọn mục tiêu như A*. | Hoàn thành cả 10/10 map. Đa số đạt Steps tốt nhất, nhưng Test 3 cần 86 Steps so với 82. Visited nodes thường cao hơn A*, ví dụ Test 4 IDA* duyệt 7.730 node so với A* 2.487. | Nên dùng khi muốn tận dụng heuristic nhưng không muốn phụ thuộc vào open set lớn như A*. Phù hợp để so sánh học thuật; trong triển khai thực tế cần tối ưu lại cách lưu metric và cắt tỉa để thể hiện rõ lợi thế bộ nhớ. |
+| Greedy | Rất nhẹ về bộ nhớ và số node duyệt. Mỗi bước chỉ chọn hành động có vẻ tốt nhất theo điểm heuristic, nên Visited nodes gần như bằng số Actions. Phản ứng nhanh, dễ quan sát trên giao diện vì quyết định mang tính cục bộ. | Không đảm bảo đường ngắn nhất và có thể đi sát giới hạn pin. Vì chỉ nhìn cục bộ, Greedy dễ chọn đường vòng nếu heuristic bị vật cản đánh lừa. Runtime không nhất thiết thấp nhất vì thuật toán còn phải kiểm tra an toàn pin, tránh quay lui và xử lý các tình huống phụ trợ. | Hoàn thành cả 10/10 map, Memory luôn là 1 và Visited nodes thấp nhất. Tuy nhiên Steps thường cao hơn nhóm tối ưu: Test 7 cần 172 Steps so với 85, Test 9 cần 175 so với 90. Test 4 hoàn thành với pin cuối bằng 0, cho thấy rủi ro về biên an toàn. | Nên dùng khi cần thuật toán nhẹ, dễ chạy, dễ quan sát hành vi và chấp nhận lời giải không tối ưu. Không nên dùng đơn độc nếu yêu cầu quan trọng là tối ưu năng lượng, đảm bảo pin dự phòng hoặc có chứng minh đường đi ngắn nhất. |
 
 ---
-
 ## 7. Xây Dựng Hệ Thống
 
 ### 7.1. Cấu Trúc Tổng Thể
@@ -831,6 +997,7 @@ Project sử dụng test tự động chạy bằng lệnh `npm run test`. Các 
 | Greedy Best-First | Tìm đường hợp lệ đến đích |
 | Map storage | Lưu/tải/xóa map, xử lý server không sẵn sàng |
 | Current target | Thuật toán expose và reset mục tiêu hiện tại |
+| Sample maps | Đủ 10 map built-in, load ra bản sao độc lập, không trùng vị trí đặc biệt và mọi mục tiêu đều đi tới được |
 
 ### 8.2. Kết Quả Kiểm Thử Tự Động
 
@@ -850,12 +1017,12 @@ npm.cmd run test
 
 | Chỉ số | Kết quả |
 | --- | --- |
-| Tổng số test | 28 |
-| Số test pass | 28 |
+| Tổng số test | 30 |
+| Số test pass | 30 |
 | Số test fail | 0 |
-| Thời gian chạy | 359,98 ms |
+| Thời gian chạy | 176,15 ms |
 
-**Nhận xét:** Toàn bộ 28 test đều pass, không có test nào thất bại. Các module Environment, Simulator, DFS, IDS, Dijkstra, Greedy, MapStorage và cơ chế expose mục tiêu hiện tại của thuật toán đều hoạt động đúng theo các trường hợp đã kiểm thử. Đặc biệt, test sinh bản đồ liên thông chạy 88 ms do phải kiểm tra BFS sau mỗi lần đặt tường — đây là chi phí chấp nhận được để đảm bảo bản đồ luôn hợp lệ.
+**Nhận xét:** Toàn bộ 30 test đều pass, không có test nào thất bại. Các module Environment, Simulator, DFS, IDS, Dijkstra, Greedy, MapStorage, Sample Maps và cơ chế expose mục tiêu hiện tại của thuật toán đều hoạt động đúng theo các trường hợp đã kiểm thử. Đặc biệt, test sinh bản đồ liên thông chạy 88 ms do phải kiểm tra BFS sau mỗi lần đặt tường — đây là chi phí chấp nhận được để đảm bảo bản đồ luôn hợp lệ.
 
 ---
 
